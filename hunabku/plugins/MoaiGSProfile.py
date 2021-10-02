@@ -29,7 +29,9 @@ class MoaiGSProfile(HunabkuPluginBase):
             db = self.request.args.get('db')
             self.db = self.dbclient[db]
             stage = self.db['stage']
+            stage_cites  = self.db['stage_cites']
             profiles = self.db['profiles']
+            profiles_private = self.db['profiles_private']
             ckeckpoint = True  # False if any error or all was dowloaded
             error = False
             msg = ""
@@ -37,19 +39,23 @@ class MoaiGSProfile(HunabkuPluginBase):
 
             # reading collection data
             try:
-                profiles_c = stage.find({'profiles': {'$ne': {}}}, {
-                                        '_id': 0, 'profiles': 1})
-                profiles_p = profiles.find({}, {'_id': 1})
+                profiles_s = stage.find({'profiles':{'$ne':{}}},{'_id':0,'profiles':1})
+                profiles_c = stage_cites.find({'cite.profiles':{'$ne':{}}},{'_id':0,'cite.profiles':1})
+                profiles_cites = list(profiles_c)
+                profiles_stage = list(profiles_s)
+                for i in range(len(profiles_cites)):
+                    profiles_stage.append(profiles_cites[i]["cite"])
 
-                profiles_stage = list(profiles_c)
+                profiles_p = profiles.find({}, {'_id': 1})
+                profiles_pv = profiles_private.find({}, {'_id': 1})
+
                 profiles_stage_ids = []
                 for profile in profiles_stage:
                     for user in profile['profiles']:
                         profiles_stage_ids.append(profile['profiles'][user])
 
                 profiles_stage_ids = set(profiles_stage_ids)
-
-                profiles_collection = list(profiles_p)
+                profiles_collection = list(profiles_p) + list(profiles_pv)
                 profiles_ids = []
                 for profile in profiles_collection:
                     profiles_ids.append(profile['_id'])
@@ -110,7 +116,7 @@ class MoaiGSProfile(HunabkuPluginBase):
         @api {get} /moai/gs/profile/not_found GSProfile not found
         @apiName GSProfile
         @apiGroup Moai GSProfile
-        @apiDescription Allow to move the register from data when not found for gsprofile to the collection gsprofile_not_found
+        @apiDescription Allow to register profiles not found
 
         @apiParam {String} db  Database to use in mongodb
         @apiParam {String} id  Paper id to move
@@ -128,7 +134,42 @@ class MoaiGSProfile(HunabkuPluginBase):
 
         if self.valid_apikey():
             self.db = self.dbclient[db]
-            self.db['gsprofile_not_found'].insert({'_id': _id, 'url': url})
+            self.db['profiles_not_found'].insert({'_id': _id, 'url': url})
+            response = self.app.response_class(
+                response=self.json.dumps(
+                    {'msg': 'register {} moved from data to gsprofile_not_data'.format(_id)}),
+                status=200,
+                mimetype='application/json'
+            )
+            return response
+        else:
+            return self.apikey_error()
+
+    @endpoint('/moai/gs/profile/private', methods=['GET'])
+    def profile_private(self):
+        """
+        @api {get} /moai/gs/profile/private GSProfile private
+        @apiName GSProfile
+        @apiGroup Moai GSProfile
+        @apiDescription Allows to register private profiles
+
+        @apiParam {String} db  Database to use in mongodb
+        @apiParam {String} id  Paper id to move
+        @apiParam {String} apikey  Credential for authentication
+
+
+        @apiSuccess {String}  msg  Message
+
+        @apiError (Error 401) msg  The HTTP 401 Unauthorized invalid authentication apikey for the target resource.
+        """
+
+        _id = self.request.args.get('_id')
+        db = self.request.args.get('db')
+        url = self.request.args.get('url')
+
+        if self.valid_apikey():
+            self.db = self.dbclient[db]
+            self.db['profiles_private'].insert({'_id': _id, 'url': url})
             response = self.app.response_class(
                 response=self.json.dumps(
                     {'msg': 'register {} moved from data to gsprofile_not_data'.format(_id)}),
