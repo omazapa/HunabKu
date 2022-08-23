@@ -10,7 +10,7 @@ class MoaiGSStage(HunabkuPluginBase):
     def stage_submit(self):
         """
         @api {get} /moai/gs/stage/submit Submit Paper
-        @apiName  Moai Stage
+        @apiName  Moai GSStage
         @apiGroup Moai GSStage
         @apiDescription Allows to submit papers to the collection stage in the given databse db.
 
@@ -43,7 +43,7 @@ class MoaiGSStage(HunabkuPluginBase):
     def stage_read(self):
         """
         @api {get} /moai/gs/stage/read Retrieve data from stage
-        @apiName Moai Stage
+        @apiName Moai GSStage
         @apiGroup Moai GSStage
         @apiDescription Allow to retrieve data from stage, criteria to send if by chunks is not defined yet
 
@@ -65,6 +65,39 @@ class MoaiGSStage(HunabkuPluginBase):
             data = list(cursor)
             response = self.app.response_class(
                 response=self.json.dumps(data),
+                status=200,
+                mimetype='application/json'
+            )
+            return response
+        else:
+            return self.apikey_error()
+
+    @endpoint('/moai/gs/stage/errors', methods=['GET'])
+    def stage_erros(self):
+        """
+        @api {get} /moai/gs/stage/errors Submit any error
+        @apiName  Moai GSStage
+        @apiGroup Moai GSStage
+        @apiDescription Allows to submit errors for debug, error message has several types,"request", "parsing", "other"
+        json ex: {"pid":..,"type":"request","error":msg,"url":url,"procedure":msg,"class":"gsbase"}
+
+        @apiParam {String} db  Database to use in mongodb
+        @apiParam {Object} data Json with error info
+        @apiParam {String} apikey  Credential for authentication
+
+
+        @apiSuccess {String}  msg  GSStage error inserted in errors collection
+        @apiError (Error 401) msg  The HTTP 401 Unauthorized errors authentication apikey for the target resource.
+        """
+        data = self.request.args.get('data')
+        db = self.request.args.get('db')
+        self.db = self.dbclient[db]
+        if self.valid_apikey():
+            jdata = self.json.loads(data)
+            self.db['errors'].insert(jdata, check_keys=False)
+            response = self.app.response_class(
+                response=self.json.dumps(
+                    {'msg': 'GSStage error inserted in stage errors'}),
                 status=200,
                 mimetype='application/json'
             )
