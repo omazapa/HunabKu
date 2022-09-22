@@ -452,3 +452,113 @@ class Scienti(HunabkuPluginBase):
         else:
             return self.apikey_error()
 
+    @endpoint('/scienti/patent', methods=['GET'])
+    def patent_event(self):
+        """
+        @api {get} /scienti/patent Scienti patent endpoint
+        @apiName event
+        @apiGroup Scienti
+        @apiDescription Allows to perform queries for patents, 
+                        model_year is mandatory parameter, if model year is the only 
+                        parameter passed, the endpoint returns all the dump of the database. 
+
+        @apiParam {String} apikey  Credential for authentication
+        @apiParam {String} COD_RH  User primary key
+        @apiParam {String} COD_PATENTE  event key (require COD_RH)
+        @apiParam {String} SGL_CATEGORIA  category of the network
+        @apiParam {String} model_year  year of the scienti model, example: 2022
+
+        @apiSuccess {Object}  Resgisters from MongoDB in Json format.
+
+        @apiError (Error 401) msg  The HTTP 401 Unauthorized invalid authentication apikey for the target resource.
+        @apiError (Error 400) msg  Bad request, if the query is not right.
+
+        @apiExample {curl} Example usage:
+            # all the patents for the user
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000000016
+            # An specific patent
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000000016&COD_EVENTO=2
+            # An specific patent category
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&SGL_CATEGORIA=EC-EC_B
+        """
+        if self.valid_apikey():
+            cod_rh = self.request.args.get('COD_RH')
+            cod_patente = self.request.args.get('COD_PATENTE')
+            sgl_cat = self.request.args.get('SGL_CATEGORIA')
+            model_year = self.request.args.get('model_year')
+            print(f"cod_patente = {cod_patente}")
+            try:
+                if model_year:
+                    db_name = f'scienti_{model_year}'
+                    db_names = self.dbclient.list_database_names()
+                    if db_name in db_names:
+                        self.db = self.dbclient[db_name]
+                        data = []
+                        if cod_rh and cod_patente:
+                            data = self.db["patent"].find_one(
+                                {'COD_RH': cod_rh, 'COD_PATENTE': int(cod_patente)}, {"_id": 0})
+                            response = self.app.response_class(
+                                response=self.json.dumps(data),
+                                status=200,
+                                mimetype='application/json'
+                            )
+                            return response
+                        if cod_rh:
+                            data = list(self.db["patent"].find(
+                                {'COD_RH': cod_rh}, {"_id": 0}))
+                            response = self.app.response_class(
+                                response=self.json.dumps(data),
+                                status=200,
+                                mimetype='application/json'
+                            )
+                            return response
+                        if sgl_cat:
+                            data = list(self.db["patent"].find(
+                                {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
+                            response = self.app.response_class(
+                                response=self.json.dumps(data),
+                                status=200,
+                                mimetype='application/json'
+                            )
+                            return response
+
+                        data = {
+                            "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                        response = self.app.response_class(
+                            response=self.json.dumps(data),
+                            status=400,
+                            mimetype='application/json'
+                        )
+                        return response
+
+                    else:
+                        # database for model year not found
+                        data = {
+                            "error": "Bad Request", "message": "invalid model_year, database not found for the given year {model_year}"}
+                        response = self.app.response_class(
+                            response=self.json.dumps(data),
+                            status=400,
+                            mimetype='application/json'
+                        )
+                        return response
+                else:
+                    # model year required
+                    data = {"error": "Bad Request",
+                            "message": "model_year parameter is required, it was not provided."}
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=400,
+                        mimetype='application/json'
+                    )
+                    return response
+            except:
+                data = {"error": "Bad Request", "message": str(sys.exc_info())}
+                response = self.app.response_class(
+                    response=self.json.dumps(data),
+                    status=400,
+                    mimetype='application/json'
+                )
+                return response
+        else:
+            return self.apikey_error()
+
