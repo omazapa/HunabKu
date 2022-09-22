@@ -475,11 +475,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the patents for the user
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000000016
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000204234
             # An specific patent
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000000016&COD_EVENTO=2
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000204234&COD_PATENTE=2
             # An specific patent category
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&SGL_CATEGORIA=EC-EC_B
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&SGL_CATEGORIA=PIV-00
         """
         if self.valid_apikey():
             cod_rh = self.request.args.get('COD_RH')
