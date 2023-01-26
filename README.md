@@ -15,7 +15,7 @@ The package is handling the endpoints  using a customized plugin system designed
     * Debian based system: `apt-get install nodejs`
     * Redhat based system: `yum install nodejs`
     * Conda: `conda install nodejs==10.13.0`
-* Install Apidocjs from https://github.com/apidoc/apidoc
+* Install Apidocjs `npm install -g apidoc@0.29.0` as root!
 * The other dependecies can be installed with pip installing this package.
 * Install MongoDB
     * Debian based system: `apt-get install mongodb`
