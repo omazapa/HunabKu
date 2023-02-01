@@ -8,6 +8,53 @@ class Scienti(HunabkuPluginBase):
     def __init__(self, hunabku):
         super().__init__(hunabku)
 
+
+    def check_required_parameters(self,req_args):
+        """
+        Method to check mandatory parameters for the request.
+        if a required parameter is not found, returns error code 400 (Bad Request)
+        """
+        model_year = req_args.get('model_year')
+        institution = req_args.get('institution')
+        if not model_year:
+            # model year required
+            data = {"error": "Bad Request",
+                    "message": "model_year parameter is required, it was not provided."}
+            response = self.app.response_class(
+                response=self.json.dumps(data),
+                status=400,
+                mimetype='application/json'
+            )
+            return response
+
+        if not institution:
+            # institution required
+            data = {"error": "Bad Request",
+                    "message": "institution parameter is required, it was not provided. options are: udea, unaula, uec"}
+            response = self.app.response_class(
+                response=self.json.dumps(data),
+                status=400,
+                mimetype='application/json'
+            )
+            return response
+        return None
+
+    def check_db(self,db_name):
+        """
+        Method to check if the database exists, the database is a combination of scienti_{initials}_{year} ex: scienti_udea_2022
+        """
+        db_names = self.dbclient.list_database_names()
+        if db_name not in db_names:
+            data = {
+                "error": "Bad Request", "message": f"invalid model_year or institution, db {db_name} not found."}
+            response = self.app.response_class(
+                response=self.json.dumps(data),
+                status=400,
+                mimetype='application/json'
+            )
+            return response
+        return None
+
     @endpoint('/scienti/product', methods=['GET'])
     def scienti_product(self):
         """
@@ -20,9 +67,10 @@ class Scienti(HunabkuPluginBase):
 
         @apiParam {String} apikey  Credential for authentication
         @apiParam {String} COD_RH  User primary key
-        @apiParam {String} COD_PRODUCTO  product key (require COD_RH)
-        @apiParam {String} SGL_CATEGORIA  category of the product
-        @apiParam {String} model_year  year of the scienti model, example: 2022
+        @apiParam {String} COD_PRODUCTO  Product key (require COD_RH)
+        @apiParam {String} SGL_CATEGORIA  Category of the product
+        @apiParam {String} model_year  Year of the scienti model, example: 2022
+        @apiParam {String} institution Institution initials. supported example: udea, uec, unaula
 
         @apiSuccess {Object}  Resgisters from MongoDB in Json format.
 
@@ -31,11 +79,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the products for the user
-            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&COD_RH=0000000639
+            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000639
             # An specific product
-            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&COD_RH=0000000639&COD_PRODUCTO=24
+            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000639&COD_PRODUCTO=24
             # An specific product category
-            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&
+            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&institution=udea
         """
 
         if self.valid_apikey():
@@ -43,71 +91,56 @@ class Scienti(HunabkuPluginBase):
             cod_prod = self.request.args.get('COD_PRODUCTO')
             sgl_cat = self.request.args.get('SGL_CATEGORIA')
             model_year = self.request.args.get('model_year')
+            institution = self.request.args.get('institution')
 
+            response = self.check_required_parameters(self.request.args)
+            if response is not None:
+                return response
+            db_name = f'scienti_{institution}_{model_year}'
+
+            response = self.check_db(db_name)
+            if response is not None:
+                return response
+            
             try:
-                if model_year:
-                    db_name = f'scienti_{model_year}'
-                    db_names = self.dbclient.list_database_names()
-                    if db_name in db_names:
-                        self.db = self.dbclient[db_name]
-                        data = []
-                        if cod_rh and cod_prod:
-                            data = self.db["product"].find_one(
-                                {'COD_RH': cod_rh, 'COD_PRODUCTO': cod_prod}, {"_id": 0})
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if cod_rh:
-                            data = list(self.db["product"].find(
-                                {'COD_RH': cod_rh}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if sgl_cat:
-                            data = list(self.db["product"].find(
-                                {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-
-                        data = {
-                            "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
-
-                    else:
-                        # database for model year not found
-                        data = {
-                            "error": "Bad Request", "message": "invalid model_year, database not found for the given year {model_year}"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
-                else:
-                    # model year required
-                    data = {"error": "Bad Request",
-                            "message": "model_year parameter is required, it was not provided."}
+                self.db = self.dbclient[db_name]
+                data = []
+                if cod_rh and cod_prod:
+                    data = self.db["product"].find_one(
+                        {'COD_RH': cod_rh, 'COD_PRODUCTO': cod_prod}, {"_id": 0})
                     response = self.app.response_class(
                         response=self.json.dumps(data),
-                        status=400,
+                        status=200,
                         mimetype='application/json'
                     )
                     return response
+                if cod_rh:
+                    data = list(self.db["product"].find(
+                        {'COD_RH': cod_rh}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+                if sgl_cat:
+                    data = list(self.db["product"].find(
+                        {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+
+                data = {
+                    "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters."}
+                response = self.app.response_class(
+                    response=self.json.dumps(data),
+                    status=400,
+                    mimetype='application/json'
+                )
+                return response
             except:
                 data = {"error": "Bad Request", "message": str(sys.exc_info())}
                 response = self.app.response_class(
@@ -134,6 +167,7 @@ class Scienti(HunabkuPluginBase):
         @apiParam {String} COD_RED  network key (require COD_RH)
         @apiParam {String} SGL_CATEGORIA  category of the network
         @apiParam {String} model_year  year of the scienti model, example: 2022
+        @apiParam {String} institution institution initials. supported example: udea, uec, unaula
 
         @apiSuccess {Object}  Resgisters from MongoDB in Json format.
 
@@ -142,11 +176,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the networks for the user
-            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&COD_RH=0000172057
+            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000172057
             # An specific network
-            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&COD_RH=0000172057&COD_RED=1
+            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000172057&COD_RED=1
             # An specific network category
-            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&SGL_CATEGORIA=RC-RC_A
+            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=RC-RC_A
         """
 
         if self.valid_apikey():
@@ -154,62 +188,52 @@ class Scienti(HunabkuPluginBase):
             cod_red = self.request.args.get('COD_RED')
             sgl_cat = self.request.args.get('SGL_CATEGORIA')
             model_year = self.request.args.get('model_year')
-
+            institution = self.request.args.get('institution')
+            self.check_required_parameters(self.request.args)
             try:
-                if model_year:
-                    db_name = f'scienti_{model_year}'
-                    db_names = self.dbclient.list_database_names()
-                    if db_name in db_names:
-                        self.db = self.dbclient[db_name]
-                        data = []
-                        if cod_rh and cod_red:
-                            cod_red = int(cod_red)
-                            data = self.db["network"].find_one(
-                                {'COD_RH': cod_rh, 'COD_RED': cod_red}, {"_id": 0})
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if cod_rh:
-                            data = list(self.db["network"].find(
-                                {'COD_RH': cod_rh}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if sgl_cat:
-                            data = list(self.db["network"].find(
-                                {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-
-                        data = {
-                            "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                db_name = f'scienti_{model_year}'
+                db_names = self.dbclient.list_database_names()
+                if db_name in db_names:
+                    self.db = self.dbclient[db_name]
+                    data = []
+                    if cod_rh and cod_red:
+                        cod_red = int(cod_red)
+                        data = self.db["network"].find_one(
+                            {'COD_RH': cod_rh, 'COD_RED': cod_red}, {"_id": 0})
                         response = self.app.response_class(
                             response=self.json.dumps(data),
-                            status=400,
+                            status=200,
+                            mimetype='application/json'
+                        )
+                        return response
+                    if cod_rh:
+                        data = list(self.db["network"].find(
+                            {'COD_RH': cod_rh}, {"_id": 0}))
+                        response = self.app.response_class(
+                            response=self.json.dumps(data),
+                            status=200,
+                            mimetype='application/json'
+                        )
+                        return response
+                    if sgl_cat:
+                        data = list(self.db["network"].find(
+                            {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
+                        response = self.app.response_class(
+                            response=self.json.dumps(data),
+                            status=200,
                             mimetype='application/json'
                         )
                         return response
 
-                    else:
-                        # database for model year not found
-                        data = {
-                            "error": "Bad Request", "message": "invalid model_year, database not found for the given year {model_year}"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
+                    data = {
+                        "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=400,
+                        mimetype='application/json'
+                    )
+                    return response
+
                 else:
                     # model year required
                     data = {"error": "Bad Request",
@@ -246,6 +270,7 @@ class Scienti(HunabkuPluginBase):
         @apiParam {String} COD_PROYECTO  project key (require COD_RH)
         @apiParam {String} SGL_CATEGORIA  category of the network
         @apiParam {String} model_year  year of the scienti model, example: 2022
+        @apiParam {String} institution institution initials. supported example: udea, uec, unaula
 
         @apiSuccess {Object}  Resgisters from MongoDB in Json format.
 
@@ -357,6 +382,7 @@ class Scienti(HunabkuPluginBase):
         @apiParam {String} COD_EVENTO  event key (require COD_RH)
         @apiParam {String} SGL_CATEGORIA  category of the network
         @apiParam {String} model_year  year of the scienti model, example: 2022
+        @apiParam {String} institution institution initials. supported example: udea, uec, unaula
 
         @apiSuccess {Object}  Resgisters from MongoDB in Json format.
 
@@ -467,6 +493,7 @@ class Scienti(HunabkuPluginBase):
         @apiParam {String} COD_PATENTE  event key (require COD_RH)
         @apiParam {String} SGL_CATEGORIA  category of the network
         @apiParam {String} model_year  year of the scienti model, example: 2022
+        @apiParam {String} institution institution initials. supported example: udea, uec, unaula
 
         @apiSuccess {Object}  Resgisters from MongoDB in Json format.
 
