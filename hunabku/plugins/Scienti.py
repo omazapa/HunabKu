@@ -480,71 +480,57 @@ class Scienti(HunabkuPluginBase):
             cod_patente = self.request.args.get('COD_PATENTE')
             sgl_cat = self.request.args.get('SGL_CATEGORIA')
             model_year = self.request.args.get('model_year')
-            print(f"cod_patente = {cod_patente}")
+            institution = self.request.args.get('institution')
+
+            response = self.check_required_parameters(self.request.args)
+            if response is not None:
+                return response
+            db_name = f'scienti_{institution}_{model_year}'
+
+            response = self.check_db(db_name)
+            if response is not None:
+                return response
+
             try:
-                if model_year:
-                    db_name = f'scienti_{model_year}'
-                    db_names = self.dbclient.list_database_names()
-                    if db_name in db_names:
-                        self.db = self.dbclient[db_name]
-                        data = []
-                        if cod_rh and cod_patente:
-                            data = self.db["patent"].find_one(
-                                {'COD_RH': cod_rh, 'COD_PATENTE': int(cod_patente)}, {"_id": 0})
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if cod_rh:
-                            data = list(self.db["patent"].find(
-                                {'COD_RH': cod_rh}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if sgl_cat:
-                            data = list(self.db["patent"].find(
-                                {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-
-                        data = {
-                            "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
-
-                    else:
-                        # database for model year not found
-                        data = {
-                            "error": "Bad Request", "message": "invalid model_year, database not found for the given year {model_year}"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
-                else:
-                    # model year required
-                    data = {"error": "Bad Request",
-                            "message": "model_year parameter is required, it was not provided."}
+                self.db = self.dbclient[db_name]
+                data = []
+                if cod_rh and cod_patente:
+                    data = self.db["patent"].find_one(
+                        {'COD_RH': cod_rh, 'COD_PATENTE': int(cod_patente)}, {"_id": 0})
                     response = self.app.response_class(
                         response=self.json.dumps(data),
-                        status=400,
+                        status=200,
                         mimetype='application/json'
                     )
                     return response
+                if cod_rh:
+                    data = list(self.db["patent"].find(
+                        {'COD_RH': cod_rh}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+                if sgl_cat:
+                    data = list(self.db["patent"].find(
+                        {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+
+                data = {
+                    "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                response = self.app.response_class(
+                    response=self.json.dumps(data),
+                    status=400,
+                    mimetype='application/json'
+                )
+                return response
+
             except:
                 data = {"error": "Bad Request", "message": str(sys.exc_info())}
                 response = self.app.response_class(
