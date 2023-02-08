@@ -274,11 +274,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the projects for the user
-            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&COD_RH=0000000930
+            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000930
             # An specific project
-            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&COD_RH=0000000930&COD_PROYECTO=1
+            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000930&COD_PROYECTO=1
             # An specific project category
-            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&SGL_CATEGORIA=PID-00
+            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=PID-00
         """
 
         if self.valid_apikey():
@@ -372,82 +372,68 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the events for the user
-            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&COD_RH=0000000016
+            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000016
             # An specific event
-            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&COD_RH=0000000016&COD_EVENTO=2
+            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000016&COD_EVENTO=2
             # An specific event category
-            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&SGL_CATEGORIA=EC-EC_B
+            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=EC-EC_B
         """
         if self.valid_apikey():
             cod_rh = self.request.args.get('COD_RH')
             cod_evento = self.request.args.get('COD_EVENTO')
             sgl_cat = self.request.args.get('SGL_CATEGORIA')
             model_year = self.request.args.get('model_year')
-            print(f"cod_evento = {cod_evento}")
+            institution = self.request.args.get('institution')
+
+            response = self.check_required_parameters(self.request.args)
+            if response is not None:
+                return response
+            db_name = f'scienti_{institution}_{model_year}'
+
+            response = self.check_db(db_name)
+            if response is not None:
+                return response
+
             try:
-                if model_year:
-                    db_name = f'scienti_{model_year}'
-                    db_names = self.dbclient.list_database_names()
-                    if db_name in db_names:
-                        self.db = self.dbclient[db_name]
-                        data = []
-                        if cod_rh and cod_evento:
-                            data = self.db["event"].find_one(
-                                {'COD_RH': cod_rh, 'COD_EVENTO': int(cod_evento)}, {"_id": 0})
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if cod_rh:
-                            data = list(self.db["event"].find(
-                                {'COD_RH': cod_rh}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-                        if sgl_cat:
-                            data = list(self.db["event"].find(
-                                {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
-                            response = self.app.response_class(
-                                response=self.json.dumps(data),
-                                status=200,
-                                mimetype='application/json'
-                            )
-                            return response
-
-                        data = {
-                            "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
-
-                    else:
-                        # database for model year not found
-                        data = {
-                            "error": "Bad Request", "message": "invalid model_year, database not found for the given year {model_year}"}
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=400,
-                            mimetype='application/json'
-                        )
-                        return response
-                else:
-                    # model year required
-                    data = {"error": "Bad Request",
-                            "message": "model_year parameter is required, it was not provided."}
+                self.db = self.dbclient[db_name]
+                data = []
+                if cod_rh and cod_evento:
+                    data = self.db["event"].find_one(
+                        {'COD_RH': cod_rh, 'COD_EVENTO': int(cod_evento)}, {"_id": 0})
                     response = self.app.response_class(
                         response=self.json.dumps(data),
-                        status=400,
+                        status=200,
                         mimetype='application/json'
                     )
                     return response
+                if cod_rh:
+                    data = list(self.db["event"].find(
+                        {'COD_RH': cod_rh}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+                if sgl_cat:
+                    data = list(self.db["event"].find(
+                        {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+
+                data = {
+                    "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                response = self.app.response_class(
+                    response=self.json.dumps(data),
+                    status=400,
+                    mimetype='application/json'
+                )
+                return response
+
             except:
                 data = {"error": "Bad Request", "message": str(sys.exc_info())}
                 response = self.app.response_class(
@@ -483,11 +469,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the patents for the user
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000204234
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000204234
             # An specific patent
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&COD_RH=0000204234&COD_PATENTE=2
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000204234&COD_PATENTE=2
             # An specific patent category
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&SGL_CATEGORIA=PIV-00
+            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=PIV-00
         """
         if self.valid_apikey():
             cod_rh = self.request.args.get('COD_RH')
