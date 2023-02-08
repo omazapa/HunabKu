@@ -8,8 +8,7 @@ class Scienti(HunabkuPluginBase):
     def __init__(self, hunabku):
         super().__init__(hunabku)
 
-
-    def check_required_parameters(self,req_args):
+    def check_required_parameters(self, req_args):
         """
         Method to check mandatory parameters for the request.
         if a required parameter is not found, returns error code 400 (Bad Request)
@@ -39,7 +38,7 @@ class Scienti(HunabkuPluginBase):
             return response
         return None
 
-    def check_db(self,db_name):
+    def check_db(self, db_name):
         """
         Method to check if the database exists, the database is a combination of scienti_{initials}_{year} ex: scienti_udea_2022
         """
@@ -101,7 +100,7 @@ class Scienti(HunabkuPluginBase):
             response = self.check_db(db_name)
             if response is not None:
                 return response
-            
+
             try:
                 self.db = self.dbclient[db_name]
                 data = []
@@ -189,61 +188,57 @@ class Scienti(HunabkuPluginBase):
             sgl_cat = self.request.args.get('SGL_CATEGORIA')
             model_year = self.request.args.get('model_year')
             institution = self.request.args.get('institution')
-            self.check_required_parameters(self.request.args)
+
+            response = self.check_required_parameters(self.request.args)
+            if response is not None:
+                return response
+            db_name = f'scienti_{institution}_{model_year}'
+
+            response = self.check_db(db_name)
+            if response is not None:
+                return response
+
             try:
-                db_name = f'scienti_{model_year}'
-                db_names = self.dbclient.list_database_names()
-                if db_name in db_names:
-                    self.db = self.dbclient[db_name]
-                    data = []
-                    if cod_rh and cod_red:
-                        cod_red = int(cod_red)
-                        data = self.db["network"].find_one(
-                            {'COD_RH': cod_rh, 'COD_RED': cod_red}, {"_id": 0})
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=200,
-                            mimetype='application/json'
-                        )
-                        return response
-                    if cod_rh:
-                        data = list(self.db["network"].find(
-                            {'COD_RH': cod_rh}, {"_id": 0}))
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=200,
-                            mimetype='application/json'
-                        )
-                        return response
-                    if sgl_cat:
-                        data = list(self.db["network"].find(
-                            {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
-                        response = self.app.response_class(
-                            response=self.json.dumps(data),
-                            status=200,
-                            mimetype='application/json'
-                        )
-                        return response
-
-                    data = {
-                        "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                self.db = self.dbclient[db_name]
+                data = []
+                if cod_rh and cod_red:
+                    cod_red = int(cod_red)
+                    data = self.db["network"].find_one(
+                        {'COD_RH': cod_rh, 'COD_RED': cod_red}, {"_id": 0})
                     response = self.app.response_class(
                         response=self.json.dumps(data),
-                        status=400,
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+                if cod_rh:
+                    data = list(self.db["network"].find(
+                        {'COD_RH': cod_rh}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+                if sgl_cat:
+                    data = list(self.db["network"].find(
+                        {'SGL_CATEGORIA': sgl_cat}, {"_id": 0}))
+                    response = self.app.response_class(
+                        response=self.json.dumps(data),
+                        status=200,
                         mimetype='application/json'
                     )
                     return response
 
-                else:
-                    # model year required
-                    data = {"error": "Bad Request",
-                            "message": "model_year parameter is required, it was not provided."}
-                    response = self.app.response_class(
-                        response=self.json.dumps(data),
-                        status=400,
-                        mimetype='application/json'
-                    )
-                    return response
+                data = {
+                    "error": "Bad Request", "message": "invalid parameters, please select the right combination of parameters"}
+                response = self.app.response_class(
+                    response=self.json.dumps(data),
+                    status=400,
+                    mimetype='application/json'
+                )
+                return response
+
             except:
                 data = {"error": "Bad Request", "message": str(sys.exc_info())}
                 response = self.app.response_class(
@@ -588,4 +583,3 @@ class Scienti(HunabkuPluginBase):
                 return response
         else:
             return self.apikey_error()
-
