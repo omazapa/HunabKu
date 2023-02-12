@@ -78,11 +78,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the products for the user
-            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000639
+            curl -i http://apis.colav.co/scienti/product?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000639
             # An specific product
-            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000639&COD_PRODUCTO=24
+            curl -i http://apis.colav.co/scienti/product?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000639&COD_PRODUCTO=24
             # An specific product category
-            curl -i http://hunabku.server/scienti/product?apikey=XXXX&model_year=2022&institution=udea
+            curl -i http://apis.colav.co/scienti/product?apikey=XXXX&model_year=2022&institution=udea
         """
 
         if self.valid_apikey():
@@ -175,11 +175,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the networks for the user
-            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000172057
+            curl -i http://apis.colav.co/scienti/network?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000172057
             # An specific network
-            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000172057&COD_RED=1
+            curl -i http://apis.colav.co/scienti/network?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000172057&COD_RED=1
             # An specific network category
-            curl -i http://hunabku.server/scienti/network?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=RC-RC_A
+            curl -i http://apis.colav.co/scienti/network?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=RC-RC_A
         """
 
         if self.valid_apikey():
@@ -274,11 +274,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the projects for the user
-            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000930
+            curl -i http://apis.colav.co/scienti/project?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000930
             # An specific project
-            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000930&COD_PROYECTO=1
+            curl -i http://apis.colav.co/scienti/project?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000930&COD_PROYECTO=1
             # An specific project category
-            curl -i http://hunabku.server/scienti/project?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=PID-00
+            curl -i http://apis.colav.co/scienti/project?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=PID-00
         """
 
         if self.valid_apikey():
@@ -372,11 +372,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the events for the user
-            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000016
+            curl -i http://apis.colav.co/scienti/event?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000016
             # An specific event
-            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000016&COD_EVENTO=2
+            curl -i http://apis.colav.co/scienti/event?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000000016&COD_EVENTO=2
             # An specific event category
-            curl -i http://hunabku.server/scienti/event?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=EC-EC_B
+            curl -i http://apis.colav.co/scienti/event?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=EC-EC_B
         """
         if self.valid_apikey():
             cod_rh = self.request.args.get('COD_RH')
@@ -469,11 +469,11 @@ class Scienti(HunabkuPluginBase):
 
         @apiExample {curl} Example usage:
             # all the patents for the user
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000204234
+            curl -i http://apis.colav.co/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000204234
             # An specific patent
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000204234&COD_PATENTE=2
+            curl -i http://apis.colav.co/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&COD_RH=0000204234&COD_PATENTE=2
             # An specific patent category
-            curl -i http://hunabku.server/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=PIV-00
+            curl -i http://apis.colav.co/scienti/patent?apikey=XXXX&model_year=2022&institution=udea&SGL_CATEGORIA=PIV-00
         """
         if self.valid_apikey():
             cod_rh = self.request.args.get('COD_RH')
