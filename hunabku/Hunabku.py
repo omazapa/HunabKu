@@ -18,6 +18,7 @@ import sys
 import importlib
 import json
 
+import pkgutil
 
 class Hunabku:
     """
@@ -169,21 +170,31 @@ class Hunabku:
         """
         self.logger.warning('-----------------------')
         self.logger.warning('------ Loagind Plugins:')
-        for path in glob.glob(
-                str(pathlib.Path(__file__).parent.absolute()) + "/plugins/*.py"):
-            name = path.split(os.path.sep)[-1].replace('.py', '')
-            print('------ Loading plugin: ' + name)
-            spec = importlib.util.spec_from_file_location(name, path)
-            module = spec.loader.load_module()
-            plugin_class = getattr(module, name)
-            instance = plugin_class(self)
-            instance.register_endpoints()
-            plugin = {}
-            plugin['name'] = name
-            plugin['path'] = path
-            plugin['spec'] = spec
-            plugin['instance'] = instance
-            self.plugins.append(plugin)
+        discovered_plugins = {
+            name: importlib.import_module(name)
+            for finder, name, ispkg
+            in pkgutil.iter_modules()
+            if name.startswith('hunabku_')
+        }
+
+        for discovered_plugin in  discovered_plugins:
+            for path in glob.glob(
+                    str(discovered_plugins[discovered_plugin].__path__[0]) + "/endpoints/*.py"):
+                name = path.split(os.path.sep)[-1].replace('.py', '')
+                print('------ Loading plugin: ' + name)
+                spec = importlib.util.spec_from_file_location(name, path)
+                module = spec.loader.load_module()
+                plugin_class = getattr(module, name)
+                instance = plugin_class(self)
+                instance.register_endpoints()
+                plugin = {}
+
+                plugin['package'] = discovered_plugin
+                plugin['name'] = name
+                plugin['path'] = path
+                plugin['spec'] = spec
+                plugin['instance'] = instance
+                self.plugins.append(plugin)
 
     def check_apidoc_syntax(self, plugin_file):
         """
@@ -192,7 +203,7 @@ class Hunabku:
         The the syntax is wrong, the Hunabku server can not start.
         """
         args = ['apidoc', '-c', self.apidoc_config_dir, '-i',
-                str(pathlib.Path(__file__).parent.absolute()) + '/plugins/',
+                str(pathlib.Path(plugin_file).parent.absolute()),
                 '--simulate',
                 '-f',
                 plugin_file]
@@ -211,15 +222,17 @@ class Hunabku:
         self.logger.warning('------ Creating documentation')
 
         rmtree(self.apidoc_static_dir, ignore_errors=True)
-        args = ['apidoc', '-c', self.apidoc_config_dir, '-i',
-                str(pathlib.Path(__file__).parent.absolute()) + '/plugins/']
+        args = ['apidoc', '-c', self.apidoc_config_dir]
 
         for plugin in self.plugins:
             self.check_apidoc_syntax(plugin['path'])
+            args.append('-i')
+            args.append(str(pathlib.Path(plugin['path']).parent.absolute()))
             args.append('-f')
             args.append(plugin['path'])
         args.append('-o')
         args.append(self.apidoc_output_dir)
+        print(f"DEBUG: {' '.join(args)}")
         process = subprocess.Popen(args,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)

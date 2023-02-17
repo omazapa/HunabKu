@@ -68,7 +68,7 @@ def main():
 
         # Details
         url="https://github.com/colav/Hunabku",
-        scripts=['bin/hunabku_server', 'bin/hunabku_loader'],
+        scripts=['bin/hunabku_server'],
         #
         license="BSD",
 
