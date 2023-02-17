@@ -202,9 +202,9 @@ class Hunabku:
         for apidoc  files generation.
         The the syntax is wrong, the Hunabku server can not start.
         """
-        args = ['apidoc', '-c', self.apidoc_config_dir, '-i',
+        args = ['apidoc', '-c', self.apidoc_config_dir + os.path.sep + "apidoc.json", '-i',
                 str(pathlib.Path(plugin_file).parent.absolute()),
-                '--simulate',
+                '--dry-run',
                 '-f',
                 plugin_file]
         process = subprocess.run(args,
@@ -212,6 +212,7 @@ class Hunabku:
         if process.returncode != 0:
             self.logger.error('------ERROR: parsing docstring for apidocs in plugin ' + plugin_file)
             self.logger.error('             server can not start until apidocs syntax is fixed')
+            self.logger.error(process)
             sys.exit(1)
 
     def generate_doc(self, timeout=1, maxtries=5):
@@ -222,7 +223,7 @@ class Hunabku:
         self.logger.warning('------ Creating documentation')
 
         rmtree(self.apidoc_static_dir, ignore_errors=True)
-        args = ['apidoc', '-c', self.apidoc_config_dir]
+        args = ['apidoc', '-c', self.apidoc_config_dir + os.path.sep + "apidoc.json"]
 
         for plugin in self.plugins:
             self.check_apidoc_syntax(plugin['path'])
