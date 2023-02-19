@@ -233,7 +233,6 @@ class Hunabku:
             args.append(plugin['path'])
         args.append('-o')
         args.append(self.apidoc_output_dir)
-        print(f"DEBUG: {' '.join(args)}")
         process = subprocess.Popen(args,
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.STDOUT)
