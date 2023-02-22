@@ -22,7 +22,7 @@ import pkgutil
 
 class Hunabku:
     """
-    Class to serve papers information store in a mongodb database throught an API using flask.
+    Class to serve papers information store in a mongodb database through an API using flask.
 
     example:
     http://0.0.0.0:5000/data/redalyc?init=1&end&apikey=pl0ok9ij8uh7yg
@@ -177,7 +177,7 @@ class Hunabku:
             if name.startswith('hunabku_')
         }
 
-        for discovered_plugin in  discovered_plugins:
+        for discovered_plugin in discovered_plugins:
             for path in glob.glob(
                     str(discovered_plugins[discovered_plugin].__path__[0]) + "/endpoints/*.py"):
                 name = path.split(os.path.sep)[-1].replace('.py', '')
