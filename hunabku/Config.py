@@ -1,13 +1,11 @@
-class Str(str):
-    """
-    Clase personalizada que hereda de la clase str.
-    Permite definir un docstring para una cadena.
-    """
+class Wrap:
     def __new__(cls, value, doc=None):
-        obj = str.__new__(cls, value)
-        obj.__doc__ = doc
-        return obj
-
+        class SubWrap(value.__class__):
+            def __new__(_cls, _value, _doc=None):
+                obj = _value.__class__.__new__(_cls, _value)
+                obj.__doc__ = _doc
+                return obj
+        return SubWrap(value, doc)
 
 class Config:
     """
@@ -18,7 +16,7 @@ class Config:
     Overall, the Config class provides a convenient way to manage configuration values
     in Python with an easy-to-use API.
     """
-    def __setattr__(self, key: Str, value: any):
+    def __setattr__(self, key: Wrap, value: Wrap):
         """
         Set the attribute `value` to the given `key` in the `__dict__` dictionary of the `Config` object.
 
@@ -33,11 +31,9 @@ class Config:
         -------
         None
         """
-        if isinstance(value, str):
-            value = Str(value)
         self.__dict__[key] = value
 
-    def __getattr__(self, key: Str):
+    def __getattr__(self, key: Wrap):
         """
         Retrieve the attribute value for the given `key` from the `__dict__` dictionary of the `Config` object.
 
@@ -58,26 +54,20 @@ class Config:
             self.__dict__[key] = Config()
             return self.__dict__[key]
 
-    def keys(self) -> list[str]:
+    def keys(self) -> list[Wrap]:
+        return self.__dict__.keys()
 
-        keys = []
-        for key in self.__dict__.keys():
-            keys.append(Str(key))
-        return keys
-
-    def __getitem__(self, key: Str):
+    def __getitem__(self, key: Wrap):
         return self.__dict__[key]
 
-    def __setitem__(self, key: Str, value):
-        if isinstance(value, str):
-            value = Str(value)
+    def __setitem__(self, key: Wrap, value: Wrap):
         self.__dict__[key] = value
 
-    def get(self, key: Str):
+    def get(self, key: Wrap) -> Wrap:
         return self.__dict__.get(key, None)
 
-    def update(self, config):
-        self.__dict__.update(config)
+    def update(self, config:Config):
+        self.__dict__.update(config.__dict__)
 
 
 class Param:
@@ -86,11 +76,10 @@ class Param:
         if "doc" in kwargs:
             doc = kwargs["doc"]
             del kwargs["doc"]
-        name = Str(list(kwargs.keys())[0])
+        name = Wrap(list(kwargs.keys())[0])
         name.__doc__ = doc
         value = kwargs[name]
-        if isinstance(value, str):
-            value = Str(value)
+        value = Wrap(value)
         config = Config()
         config[name] = value
         config[name].__doc__ = doc
