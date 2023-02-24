@@ -2,8 +2,6 @@ from flask import (
     Flask
 )
 
-from pymongo import MongoClient
-
 import logging
 
 import os
@@ -20,6 +18,7 @@ import json
 
 import pkgutil
 
+
 class Hunabku:
     """
     Class to serve papers information store in a mongodb database through an API using flask.
@@ -28,14 +27,7 @@ class Hunabku:
     http://0.0.0.0:5000/data/redalyc?init=1&end&apikey=pl0ok9ij8uh7yg
     """
 
-    def __init__(
-            self,
-            apikey,
-            dburi='mongodb://localhost:27017/',
-            ip='127.0.0.1',
-            port=8080,
-            log_file='hunabku.log',
-            info_level=logging.DEBUG):
+    def __init__(self, config: dict):
         """
         Contructor to initialize configuration options.
 
@@ -45,12 +37,7 @@ class Hunabku:
             port (int): port for the server
             info_level (logging.DEBUG/INFO etc..): enable/disable debug mode with extra messages output.
         """
-        self.dburi = dburi
-        self.dbclient = MongoClient(dburi)
-        self.ip = ip
-        self.port = port
-        self.info_level = info_level
-        self.apikey = apikey
+        self.config = config
         self.apidoc_dir = 'hunabku_website'
         self.apidoc_static_dir = self.apidoc_dir + '/static'
         self.apidoc_output_dir = self.apidoc_dir + '/static/apidoc'
@@ -58,8 +45,8 @@ class Hunabku:
         self.apidoc_config_dir = self.apidoc_dir + '/config'
         self.apidoc_config_data = {}
         self.apidoc_config_data['url'] = 'http://' + \
-            ip + ':' + str(port) + '/apidoc'
-        self.apidoc_config_data['sampleUrl'] = 'http://' + ip + ':' + str(port)
+            config.host + ':' + str(config.port) + '/apidoc'
+        self.apidoc_config_data['sampleUrl'] = 'http://' + config.host + ':' + str(config.port)
         self.apidoc_config_data['header'] = {}
         self.apidoc_config_data['header']['filename'] = self.apidoc_config_dir + \
             '/apidoc-header.md'
@@ -69,9 +56,8 @@ class Hunabku:
         self.pkg_templates_dir = str(
             pathlib.Path(__file__).parent.absolute()) + '/templates/'
         self.plugins = []
-        self.log_file = log_file
         self.logger = logging.getLogger(__name__)
-        self.set_info_level(info_level)
+        self.set_info_level(config["info_level"])
         self.app = Flask(
             'hanubku',
             static_folder=self.apidoc_static_dir,
@@ -161,8 +147,8 @@ class Hunabku:
         Information level for debug or verbosity of the application (https://docs.python.org/3.1/library/logging.html)
         """
         if info_level != logging.DEBUG:
-            logging.basicConfig(filename=self.log_file, level=info_level)
-        self.info_level = info_level
+            logging.basicConfig(filename=self.config["log_file"], level=info_level)
+        self.config["info_level"] = info_level
 
     def load_plugins(self):
         """
@@ -244,10 +230,10 @@ class Hunabku:
                 process.kill()
                 break
         self.logger.warning(
-            '------ Apidocs at http://{}:{}/apidoc/index.html'.format(self.ip, self.port))
+            '------ Apidocs at http://{}:{}/apidoc/index.html'.format(self.config.host, self.config.port))
 
     def start(self):
         """
         Method to start server
         """
-        self.app.run(host=self.ip, port=self.port, debug=True)
+        self.app.run(host=self.config.host, port=self.config.port, debug=True, use_reloader=self.config.use_reloader)

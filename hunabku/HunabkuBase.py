@@ -5,7 +5,7 @@ from flask import (
 )
 from bson import ObjectId
 from functools import wraps
-
+from hunabku.Config import Config
 
 class HunabkuJsonEncoder(json.JSONEncoder):
     """
@@ -64,7 +64,9 @@ def endpoint(path, methods):
     return wrapper
 
 
-class HunabkuPluginBase:
+class HunabkuPluginBase(object):
+    config = Config()
+
     def __init__(self, hunabku):
         """
         Base class to handle the plugins.
@@ -76,12 +78,7 @@ class HunabkuPluginBase:
         that is going to hanlde the endpoint.
 
         """
-        self.dburi = hunabku.dburi
-        self.dbclient = hunabku.dbclient
-        self.ip = hunabku.ip
-        self.port = hunabku.port
-        self.info_level = hunabku.info_level
-        self.apikey = hunabku.apikey
+        self.global_config = hunabku.config
         self.app = hunabku.app
         self.request = request
         self.json = json
@@ -154,7 +151,7 @@ class HunabkuPluginBase:
 
     def valid_apikey(self):
         apikey = self.request.args.get('apikey')
-        if self.apikey == apikey:
+        if self.global_config["apikey"] == apikey:
             return True
         else:
             return False

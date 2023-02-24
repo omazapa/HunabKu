@@ -87,6 +87,11 @@ def main():
             'requests>=2.22.0',
             'joblib>=0.14.1'
         ],
+        extras_require={
+        'scienti': [
+            'hunabku_scienti',
+        ]
+    }
     )
 
 
