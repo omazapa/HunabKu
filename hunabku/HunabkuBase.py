@@ -167,7 +167,7 @@ class HunabkuPluginBase(object):
         Method to register all the endpoints in flask's app
         """
         global _endpoints
-        if self.is_valid_endpoints():
+        if self.has_valid_endpoints():
             for endpoint_data in _endpoints[type(self).__name__]:
                 path = endpoint_data['path']
                 func_name = endpoint_data['func_name']
@@ -175,14 +175,15 @@ class HunabkuPluginBase(object):
                 func = getattr(self, func_name)
                 self.app.add_url_rule(path, view_func=func, methods=methods)
 
-    def get_global_endpoints(self):
+    @classmethod
+    def get_global_endpoints(cls):
         """
         Method to return the global dictionary with all
         the registers  loaded
         """
         return _endpoints
 
-    def is_valid_endpoints(self):
+    def has_valid_endpoints(self):
         """
         This method checks before to load the plugin if any paths in the endpoint is repeated.
         this platform does not allows overwrite endpoint paths.
