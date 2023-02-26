@@ -1,4 +1,7 @@
 
+import sys
+
+
 class Config:
     """
     Config class provides a way to create and manage a configuration object in Python.
@@ -114,7 +117,38 @@ class Config:
 
 
 class Param:
+    """
+    Class to pass parameters to the Hunabku configuration system:
+
+    from hunabku.Config import Config, Param
+    class MyPlugin(HunabkuPluginBase)
+        config = Config()
+        config += Param(db="test",doc="Database name")
+        config += Param(port=8080).doc("port to connect is a remote service") #is possible pass documentation using the method .doc
+        config += Param(debug=True) # you can leave a parameter without documentation if you prefer.
+
+    """
     def __new__(cls, **kwargs):
+        if len(kwargs) == 0:
+            print(
+                "ERROR: Param can not be empty, at least one param have to be provided ex: Param(var='test')")
+            sys.exit(1)
+
+        if len(kwargs) > 2:
+            print("ERROR: A maximum of two parameters can be passed, the parameter and the doc for the parameter ex: Param(db='test', doc='databaset name')")
+            sys.exit(1)
+
+        name = list(kwargs.keys())[0]
+        if len(kwargs) == 2:
+            doc = ""
+            if "doc" in kwargs:
+                doc = kwargs["doc"]
+                del kwargs["doc"]
+            else:
+                print(f"ERROR: in Parameter {name}, doc parameter not provide.\n" +
+                      "       Two parameters can be provided but the second one have to be 'doc' ex: Param(db='test', doc='databaset name')")
+                sys.exit(1)
+
         name = list(kwargs.keys())[0]
         value = kwargs[name]
         config = Config()
