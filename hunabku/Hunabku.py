@@ -5,10 +5,12 @@ from flask import (
 import logging
 
 import os
+from hunabku.HunabkuBase import HunabkuPluginBase
 from hunabku._version import get_version
 from shutil import rmtree
 from distutils.dir_util import copy_tree
 import subprocess
+import inspect
 import glob
 import time
 import pathlib
@@ -38,6 +40,7 @@ class Hunabku:
             info_level (logging.DEBUG/INFO etc..): enable/disable debug mode with extra messages output.
         """
         self.config = config
+        self.plugin_prefix = "hunabku"
         self.apidoc_dir = 'hunabku_website'
         self.apidoc_static_dir = self.apidoc_dir + '/static'
         self.apidoc_output_dir = self.apidoc_dir + '/static/apidoc'
@@ -46,7 +49,8 @@ class Hunabku:
         self.apidoc_config_data = {}
         self.apidoc_config_data['url'] = 'http://' + \
             config.host + ':' + str(config.port) + '/apidoc'
-        self.apidoc_config_data['sampleUrl'] = 'http://' + config.host + ':' + str(config.port)
+        self.apidoc_config_data['sampleUrl'] = 'http://' + \
+            config.host + ':' + str(config.port)
         self.apidoc_config_data['header'] = {}
         self.apidoc_config_data['header']['filename'] = self.apidoc_config_dir + \
             '/apidoc-header.md'
@@ -63,9 +67,9 @@ class Hunabku:
             static_folder=self.apidoc_static_dir,
             static_url_path='/',
             template_folder=self.apidoc_templates_dir)
-        self.apidoc_setup()
-        self.load_plugins()
-        self.generate_doc()
+        # self.apidoc_setup()
+        # self.load_plugins()
+        # self.generate_doc()
 
     def apidoc_setup(self):
         """
@@ -147,40 +151,49 @@ class Hunabku:
         Information level for debug or verbosity of the application (https://docs.python.org/3.1/library/logging.html)
         """
         if info_level != logging.DEBUG:
-            logging.basicConfig(filename=self.config["log_file"], level=info_level)
+            logging.basicConfig(
+                filename=self.config["log_file"], level=info_level)
         self.config["info_level"] = info_level
 
-    def load_plugins(self):
+    def load_plugins(self, verbose=True):
         """
         This method return the plugins found in the folder plugins.
         """
-        self.logger.warning('-----------------------')
-        self.logger.warning('------ Loagind Plugins:')
+        if verbose:
+            self.logger.warning('-----------------------')
+            self.logger.warning('------ Loagind Plugins:')
         discovered_plugins = {
             name: importlib.import_module(name)
             for finder, name, ispkg
             in pkgutil.iter_modules()
-            if name.startswith('hunabku_')
+            if name.startswith(self.plugin_prefix + '_')
         }
-
         for discovered_plugin in discovered_plugins:
             for path in glob.glob(
                     str(discovered_plugins[discovered_plugin].__path__[0]) + "/endpoints/*.py"):
-                name = path.split(os.path.sep)[-1].replace('.py', '')
-                print('------ Loading plugin: ' + name)
-                spec = importlib.util.spec_from_file_location(name, path)
+                mname = path.split(os.path.sep)[-1].replace('.py', '')
+                if verbose:
+                    self.logger.warning(
+                        '------ Loading plugin module: ' + mname)
+                spec = importlib.util.spec_from_file_location(mname, path)
                 module = spec.loader.load_module()
-                plugin_class = getattr(module, name)
-                instance = plugin_class(self)
-                instance.register_endpoints()
-                plugin = {}
+                for cname, plugin_class in inspect.getmembers(module):
+                    if inspect.isclass(plugin_class) and issubclass(plugin_class, HunabkuPluginBase) and cname.startswith(mname):
+                        if verbose:
+                            self.logger.warning(
+                                f'------ Loading plugin class: {mname}.{cname}')
+                        instance = plugin_class(self)
+                        instance.register_endpoints()
+                        plugin = {}
 
-                plugin['package'] = discovered_plugin
-                plugin['name'] = name
-                plugin['path'] = path
-                plugin['spec'] = spec
-                plugin['instance'] = instance
-                self.plugins.append(plugin)
+                        plugin['package'] = discovered_plugin
+                        plugin['mod_name'] = mname
+                        plugin['class_name'] = cname
+                        plugin['name'] = f"{discovered_plugin}.{mname}.{cname}"
+                        plugin['path'] = path
+                        plugin['spec'] = spec
+                        plugin['instance'] = instance
+                        self.plugins.append(plugin)
 
     def check_apidoc_syntax(self, plugin_file):
         """
@@ -196,8 +209,10 @@ class Hunabku:
         process = subprocess.run(args,
                                  stdout=subprocess.PIPE)
         if process.returncode != 0:
-            self.logger.error('------ERROR: parsing docstring for apidocs in plugin ' + plugin_file)
-            self.logger.error('             server can not start until apidocs syntax is fixed')
+            self.logger.error(
+                '------ERROR: parsing docstring for apidocs in plugin ' + plugin_file)
+            self.logger.error(
+                '             server can not start until apidocs syntax is fixed')
             self.logger.error(process)
             sys.exit(1)
 
@@ -209,7 +224,8 @@ class Hunabku:
         self.logger.warning('------ Creating documentation')
 
         rmtree(self.apidoc_static_dir, ignore_errors=True)
-        args = ['apidoc', '-c', self.apidoc_config_dir + os.path.sep + "apidoc.json"]
+        args = ['apidoc', '-c', self.apidoc_config_dir +
+                os.path.sep + "apidoc.json"]
 
         for plugin in self.plugins:
             self.check_apidoc_syntax(plugin['path'])
@@ -236,4 +252,5 @@ class Hunabku:
         """
         Method to start server
         """
-        self.app.run(host=self.config.host, port=self.config.port, debug=True, use_reloader=self.config.use_reloader)
+        self.app.run(host=self.config.host, port=self.config.port,
+                     debug=True, use_reloader=self.config.use_reloader)
