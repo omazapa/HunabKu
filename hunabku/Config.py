@@ -117,17 +117,6 @@ class Config:
 
 
 class Param:
-    """
-    Class to pass parameters to the Hunabku configuration system:
-
-    from hunabku.Config import Config, Param
-    class MyPlugin(HunabkuPluginBase)
-        config = Config()
-        config += Param(db="test",doc="Database name")
-        config += Param(port=8080).doc("port to connect is a remote service") #is possible pass documentation using the method .doc
-        config += Param(debug=True) # you can leave a parameter without documentation if you prefer.
-
-    """
     def __new__(cls, **kwargs):
         if len(kwargs) == 0:
             print(
@@ -139,8 +128,8 @@ class Param:
             sys.exit(1)
 
         name = list(kwargs.keys())[0]
+        doc = ""
         if len(kwargs) == 2:
-            doc = ""
             if "doc" in kwargs:
                 doc = kwargs["doc"]
                 del kwargs["doc"]
@@ -154,5 +143,5 @@ class Param:
         config = Config()
         config.__fromparam__ = True
         config[name] = value
-        config.__docs__[name] = ""
+        config.__docs__[name] = doc
         return config
