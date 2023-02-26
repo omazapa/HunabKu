@@ -2,9 +2,12 @@
 
 from hunabku.HunabkuBase import set_verbose
 from hunabku.Hunabku import Hunabku
+from hunabku.Config import ConfigGenerator
 import socket
 import argparse
 import importlib
+import sys
+
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--db', type=str, default='colav',
@@ -20,26 +23,43 @@ parser.add_argument(
     help='local server ip (optional for public ip)')
 parser.add_argument('--port', type=int, default=8080,
                     help='server port (default 8080)')
+
 parser.add_argument('--apikey', type=str, default='colavudea', help='apikey')
-parser.add_argument('--config', type=str, required=True,
-                    help='python file with a dictionary called config, take a look in the README for more information.')
+
+parser.add_argument('--config', type=str,
+                    help='python file with a instance of Config called config, take a look in the README for more information.')
+
+parser.add_argument('--generate_config', type=str,
+                    help='Generate a config file with all the options available for all plugins with the default options.'
+                         'as argument requires a python filename for the output ex: config.py')
+
+parser.add_argument('--overwrite', action='store_true',
+                    help='If True, overwrites config file when it is generated.')
 
 args = parser.parse_args()
 if args.ip is None:
     ip = socket.gethostbyname(socket.gethostname())
 else:
     ip = args.ip
-
-config_file = args.config
-loader = importlib.machinery.SourceFileLoader('config', config_file)
-spec = importlib.util.spec_from_loader(loader.name, loader)
-config = importlib.util.module_from_spec(spec)
-loader.exec_module(config)
-config = config.config
-
+config_gen = ConfigGenerator()
+config = config = config_gen.config
+if args.config:
+    config_file = args.config
+    loader = importlib.machinery.SourceFileLoader('config', config_file)
+    spec = importlib.util.spec_from_loader(loader.name, loader)
+    config = importlib.util.module_from_spec(spec)
+    loader.exec_module(config)
+    config = config.config
 
 if __name__ == '__main__':
     server = Hunabku(config)
+    if args.generate_config:
+        set_verbose(False)
+        if not config_gen.generate_config(args.generate_config,server,args.overwrite):
+            print(f"ERROR: file {args.generate_config} exists, use --overwrite to force the config file generation.", file = sys.stderr)
+            sys.exit(1)
+        else:
+            sys.exit(0)
     server.apidoc_setup()
     server.load_plugins()
     server.generate_doc()

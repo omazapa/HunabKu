@@ -1,6 +1,8 @@
 
 import sys
 import os
+import logging
+
 
 class Config:
     """
@@ -169,9 +171,9 @@ class ConfigGenerator:
     config += Param(apikey=os.environ["HUNABKU_APIKEY"] if "HUNABKU_APIKEY" in os.environ else "colavudea",
                     doc="Apikey for authentication.")
 
-    def generate_config(self, output_file, hunabku: Hunabku, overwrite):
+    def generate_config(self, output_file, hunabku, overwrite):
         if len(hunabku.plugins) == 0:
-            hunabku.load_plugins()
+            hunabku.load_plugins(verbose=False)
         output = "from hunabku.Config import Config"+os.linesep
         output += "config = Config() "+os.linesep*2
         for key in self.config.keys():
@@ -203,7 +205,7 @@ class ConfigGenerator:
                 f.close()
             return True
         else:
-            if os.path.exists(filename):
+            if os.path.exists(output_file):
                 return False
             else:
                 with open(output_file, "w") as f:
