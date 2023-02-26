@@ -181,7 +181,7 @@ class Hunabku:
                     if inspect.isclass(plugin_class) and issubclass(plugin_class, HunabkuPluginBase) and cname.startswith(mname):
                         if verbose:
                             self.logger.warning(
-                                f'------ Loading plugin class: {mname}.{cname}')
+                                f'------ Registering plugin class: {mname}.{cname}')
                         instance = plugin_class(self)
                         instance.register_endpoints()
                         plugin = {}
@@ -194,6 +194,10 @@ class Hunabku:
                         plugin['spec'] = spec
                         plugin['instance'] = instance
                         self.plugins.append(plugin)
+                        if verbose:
+                            self.logger.warning(
+                                f'------ Registered plugin class: {mname}.{cname}  DONE')
+                        
 
     def check_apidoc_syntax(self, plugin_file):
         """

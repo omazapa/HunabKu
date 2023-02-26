@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from hunabku.HunabkuBase import set_verbose
 from hunabku.Hunabku import Hunabku
 import socket
 import argparse
@@ -39,4 +40,7 @@ config = config.config
 
 if __name__ == '__main__':
     server = Hunabku(config)
+    server.apidoc_setup()
+    server.load_plugins()
+    server.generate_doc()
     server.start()

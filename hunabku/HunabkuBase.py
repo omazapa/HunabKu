@@ -21,7 +21,11 @@ class HunabkuJsonEncoder(json.JSONEncoder):
 
 
 _endpoints = {}  # global hidden dictionary to register every endpoint by plugin
+_verbose = True
 
+def set_verbose(status):
+    global _verbose
+    _verbose = status
 
 def endpoint(path, methods):
     """
@@ -49,7 +53,9 @@ def endpoint(path, methods):
     """
     def wrapper(func):
         global _endpoints
-        print('------ Adding endpoint ' + path + ' with methods' + str(methods))
+        global _verbose
+        if _verbose:
+            print('------ Adding endpoint ' + path + ' with methods' + str(methods))
         class_name, func_name = func.__qualname__.split('.')
         if class_name not in _endpoints:
             _endpoints[class_name] = []

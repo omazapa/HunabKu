@@ -1,6 +1,6 @@
 
 import sys
-
+import os
 
 class Config:
     """
@@ -134,7 +134,7 @@ class Param:
                 doc = kwargs["doc"]
                 del kwargs["doc"]
             else:
-                print(f"ERROR: in Parameter {name}, doc parameter not provide.\n" +
+                print(f"ERROR: in Parameter {name}, doc parameter not provide." + os.linesep +
                       "       Two parameters can be provided but the second one have to be 'doc' ex: Param(db='test', doc='databaset name')")
                 sys.exit(1)
 
@@ -145,3 +145,68 @@ class Param:
         config[name] = value
         config.__docs__[name] = doc
         return config
+
+
+class ConfigGenerator:
+    config = Config()
+
+    config += Param(host="localhost", doc="Hostname or ip for flask server.")
+
+    config += Param(port=8080,
+                    doc="Port for flask server.")
+
+    config += Param(log_file="hunabku.log",
+                    doc="Name for logging file. "
+                        "This is only enable in logging level different to DEBUG.")
+
+    config += Param(use_reloader=True,
+                    doc="Flask allows to reload the endpoint if something is changed in the code.\n"
+                        "Set this False to void reload code.")
+
+    config += Param(info_level=logging.DEBUG,
+                    doc="The logging level, default DEBUG, set it to INFO for production.")
+
+    config += Param(apikey=os.environ["HUNABKU_APIKEY"] if "HUNABKU_APIKEY" in os.environ else "colavudea",
+                    doc="Apikey for authentication.")
+
+    def generate_config(self, output_file, hunabku: Hunabku, overwrite):
+        if len(hunabku.plugins) == 0:
+            hunabku.load_plugins()
+        output = "from hunabku.Config import Config"+os.linesep
+        output += "config = Config() "+os.linesep*2
+        for key in self.config.keys():
+            doc = self.config.__docs__[key]
+            output += f"# {key} "+os.linesep
+            comments = doc.split(os.linesep)
+            for comment in comments:
+                output += f"# {comment} "+os.linesep
+
+            value = self.config[key]
+            if isinstance(value, str):
+                output += f'config.{key} = "{value}" '+os.linesep*2
+            else:
+                output += f'config.{key} = {value} '+os.linesep*2
+
+        for plugin in hunabku.plugins:
+            for key in plugin['instance'].config.keys():
+                output += f"# {key} "+os.linesep
+                output += f"#{plugin['instance'].config.__docs__[key]} "+os.linesep
+                value = plugin["instance"].config[key]
+                if isinstance(value, str):
+                    output += f'config.{plugin["package"]}.{plugin["mod_name"]}.{plugin["mod_name"]}.{key} = "{value}"'+os.linesep*2
+                else:
+                    output += f'config.{plugin["package"]}.{plugin["mod_name"]}.{plugin["mod_name"]}.{key} = {value}'+os.linesep*2
+
+        if overwrite:
+            with open(output_file, "w") as f:
+                f.write(output)
+                f.close()
+            return True
+        else:
+            if os.path.exists(filename):
+                return False
+            else:
+                with open(output_file, "w") as f:
+                    f.write(output)
+                    f.close()
+                return True
