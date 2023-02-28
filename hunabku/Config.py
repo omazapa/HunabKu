@@ -169,35 +169,38 @@ class ConfigGenerator:
                     doc="The logging level, default DEBUG, set it to INFO for production.")
 
     config += Param(apikey=os.environ["HUNABKU_APIKEY"] if "HUNABKU_APIKEY" in os.environ else "colavudea",
-                    doc="Apikey for authentication.")
+                    doc="Apikey for authentication."
+                    )
 
     def generate_config(self, output_file, hunabku, overwrite):
         if len(hunabku.plugins) == 0:
             hunabku.load_plugins(verbose=False)
+
+        # appening plugins documentatiom to current object
+        for plugin in hunabku.plugins:
+            self.config[plugin["package"]] = Config()
+            self.config[plugin["package"]][plugin["mod_name"]] = Config()
+            self.config[plugin["package"]][plugin["mod_name"]
+                                           ][plugin["class_name"]] = plugin['class'].config
+
+        config_dict = self.parse_config(self.config)
+        config_dict = self.parse_paths(config_dict)
         output = "from hunabku.Config import Config"+os.linesep
         output += "config = Config() "+os.linesep*2
-        for key in self.config.keys():
-            doc = self.config.__docs__[key]
-            output += f"# {key} "+os.linesep
+        for key in config_dict.keys():
+            last = key.split(".")[-1]
+            output += f"# {last} "+os.linesep
+            doc = config_dict[key]["doc"]
+            value = config_dict[key]["value"]
+
             comments = doc.split(os.linesep)
             for comment in comments:
                 output += f"# {comment} "+os.linesep
 
-            value = self.config[key]
             if isinstance(value, str):
-                output += f'config.{key} = "{value}" '+os.linesep*2
+                output += f'{key} = "{value}" '+os.linesep*2
             else:
-                output += f'config.{key} = {value} '+os.linesep*2
-
-        for plugin in hunabku.plugins:
-            for key in plugin['class'].config.keys():
-                output += f"# {key} "+os.linesep
-                output += f"#{plugin['class'].config.__docs__[key]} "+os.linesep
-                value = plugin["class"].config[key]
-                if isinstance(value, str):
-                    output += f'config.{plugin["package"]}.{plugin["mod_name"]}.{plugin["mod_name"]}.{key} = "{value}"'+os.linesep*2
-                else:
-                    output += f'config.{plugin["package"]}.{plugin["mod_name"]}.{plugin["mod_name"]}.{key} = {value}'+os.linesep*2
+                output += f'{key} = {value} '+os.linesep*2
 
         if overwrite:
             with open(output_file, "w") as f:
@@ -212,3 +215,44 @@ class ConfigGenerator:
                     f.write(output)
                     f.close()
                 return True
+
+    def parse_config(self, config: Config, root=True) -> dict:
+        info = {}
+        if root:
+            cnf = Config()
+            cnf.config = config
+            config = cnf
+
+        for key in config.keys():
+            if isinstance(config[key], Config):
+                if root:
+                    info[key] = self.parse_config(config[key], False)
+                else:
+                    info[f".{key}"] = self.parse_config(config[key], False)
+            else:
+                value = config[key]
+                doc = config.__docs__[key]
+                info[key] = {'value': value, 'doc': doc}
+
+        return info
+
+    def parse_paths(self, config: dict, prefix="", root=True) -> dict:
+
+        paths = {}
+
+        for key, payload in config.items():
+            if key == "config" and root:
+                prefix = "config" + prefix
+                _paths = self.parse_paths(config[key], prefix, False)
+                paths.update(_paths)
+
+            elif key.startswith("."):
+                lprefix = prefix + key
+                _paths = self.parse_paths(config[key], lprefix, False)
+                paths.update(_paths)
+
+            else:
+                lprefix = prefix + '.' + key
+                paths[lprefix] = payload
+
+        return paths
