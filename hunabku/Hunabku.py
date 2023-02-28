@@ -188,6 +188,7 @@ class Hunabku:
 
                         plugin['package'] = discovered_plugin
                         plugin['mod_name'] = mname
+                        plugin['class'] = plugin_class
                         plugin['class_name'] = cname
                         plugin['name'] = f"{discovered_plugin}.{mname}.{cname}"
                         plugin['path'] = path

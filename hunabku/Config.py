@@ -190,10 +190,10 @@ class ConfigGenerator:
                 output += f'config.{key} = {value} '+os.linesep*2
 
         for plugin in hunabku.plugins:
-            for key in plugin['instance'].config.keys():
+            for key in plugin['class'].config.keys():
                 output += f"# {key} "+os.linesep
-                output += f"#{plugin['instance'].config.__docs__[key]} "+os.linesep
-                value = plugin["instance"].config[key]
+                output += f"#{plugin['class'].config.__docs__[key]} "+os.linesep
+                value = plugin["class"].config[key]
                 if isinstance(value, str):
                     output += f'config.{plugin["package"]}.{plugin["mod_name"]}.{plugin["mod_name"]}.{key} = "{value}"'+os.linesep*2
                 else:

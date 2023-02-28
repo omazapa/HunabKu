@@ -24,10 +24,7 @@ parser.add_argument('--overwrite', action='store_true',
 
 
 args = parser.parse_args()
-if args.host is None:
-    host = socket.gethostbyname(socket.gethostname())
-else:
-    host = args.host
+
 config_gen = ConfigGenerator()
 config = config = config_gen.config
 if args.config:
