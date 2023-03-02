@@ -6,7 +6,7 @@ import logging
 
 import os
 from hunabku.HunabkuBase import HunabkuPluginBase
-from hunabku.Config import ConfigGenerator
+from hunabku.Config import ConfigGenerator, Config
 from hunabku._version import get_version
 from shutil import rmtree
 from distutils.dir_util import copy_tree
@@ -31,7 +31,7 @@ class Hunabku:
     """
     config = ConfigGenerator.config
     
-    def __init__(self, config: dict):
+    def __init__(self, config:Config):
         """
         Contructor to initialize configuration options.
 

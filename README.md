@@ -1,7 +1,7 @@
 <center><img src="https://raw.githubusercontent.com/colav/colav.github.io/master/img/Logo.png"/></center>
 
 # HunabKu  
-Data Server Gateway/  Maya - father of all gods
+Modular APIs creation using plugins system/  Maya - father of all gods
 
 # Description
 Package to load data in MongoDB and to serve the data from mongodb on endpoints using flask. 
