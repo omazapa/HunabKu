@@ -196,6 +196,10 @@ class Hunabku:
                         plugin['path'] = path
                         plugin['spec'] = spec
                         plugin['instance'] = instance
+                        if discovered_plugin in self.config.keys():
+                            if mname in self.config[discovered_plugin].keys():
+                                if cname in self.config[discovered_plugin][mname].keys():
+                                    instance.config.update(self.config[discovered_plugin][mname][cname])
                         self.plugins.append(plugin)
                         if verbose:
                             self.logger.warning(

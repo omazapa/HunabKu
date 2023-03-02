@@ -3,12 +3,6 @@ import sys
 import os
 import logging
 
-
-import sys
-import os
-import logging
-
-
 class Config:
     """
     Config class provides a way to create and manage a configuration object in Python.
@@ -124,8 +118,33 @@ class Config:
                   file=sys.stderr)
             sys.exit(1)
 
-    def doc(self, var: str, doc: str):
+    def set_doc(self, var: str, doc: str):
         self.__docs__[var] = doc
+
+    def _dict(self, config, root=True) -> dict:
+        """
+        This method creates a dictionary from the config object
+        """
+        info = {}
+        if root:
+            cnf = Config()
+            cnf.config = config
+            config = cnf
+
+        for key in config.keys():
+            if isinstance(config[key], Config):
+                info[key] = self._dict(config[key], False)
+            else:
+                value = config[key]
+                doc = ""
+                if key in config.__docs__:
+                    doc = config.__docs__[key]
+                info[key] = {'value': value, 'doc': doc}
+
+        return info
+
+    def dict(self):
+        return self._dict(self)
 
 
 class Param:
@@ -206,21 +225,21 @@ class ConfigGenerator:
         config_dict = self.parse_config(self.config)
         config_dict = self.parse_paths(config_dict)
         output = "from hunabku.Config import Config"+os.linesep
-        output += "config = Config() "+os.linesep*2
+        output += "config = Config()"+os.linesep*2
         for key in config_dict.keys():
             last = key.split(".")[-1]
-            output += f"# {last} "+os.linesep
+            output += f"# {last}"+os.linesep
             doc = config_dict[key]["doc"]
             value = config_dict[key]["value"]
 
             comments = doc.split(os.linesep)
             for comment in comments:
-                output += f"# {comment} "+os.linesep
+                output += f"# {comment}"+os.linesep
 
             if isinstance(value, str):
-                output += f'{key} = "{value}" '+os.linesep*2
+                output += f'{key} = "{value}"'+os.linesep*2
             else:
-                output += f'{key} = {value} '+os.linesep*2
+                output += f'{key} = {value}'+os.linesep*2
 
         if overwrite:
             with open(output_file, "w") as f:
@@ -237,6 +256,9 @@ class ConfigGenerator:
                 return True
 
     def parse_config(self, config: Config, root=True) -> dict:
+        """
+        This method creates a dictionary from the config object
+        """
         info = {}
         if root:
             cnf = Config()
