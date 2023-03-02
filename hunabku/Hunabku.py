@@ -6,6 +6,7 @@ import logging
 
 import os
 from hunabku.HunabkuBase import HunabkuPluginBase
+from hunabku.Config import ConfigGenerator
 from hunabku._version import get_version
 from shutil import rmtree
 from distutils.dir_util import copy_tree
@@ -28,7 +29,8 @@ class Hunabku:
     example:
     http://0.0.0.0:5000/data/redalyc?init=1&end&apikey=pl0ok9ij8uh7yg
     """
-
+    config = ConfigGenerator.config
+    
     def __init__(self, config: dict):
         """
         Contructor to initialize configuration options.
@@ -39,7 +41,7 @@ class Hunabku:
             port (int): port for the server
             info_level (logging.DEBUG/INFO etc..): enable/disable debug mode with extra messages output.
         """
-        self.config = config
+        self.config.update(config)
         self.plugin_prefix = "hunabku"
         self.apidoc_dir = 'hunabku_website'
         self.apidoc_static_dir = self.apidoc_dir + '/static'

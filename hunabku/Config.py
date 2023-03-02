@@ -4,6 +4,11 @@ import os
 import logging
 
 
+import sys
+import os
+import logging
+
+
 class Config:
     """
     Config class provides a way to create and manage a configuration object in Python.
@@ -38,7 +43,6 @@ class Config:
         None
         """
         self.__dict__[key] = value
-        self.__docs__[key] = ""
 
     def __getattr__(self, key: str):
         """
@@ -73,28 +77,31 @@ class Config:
     def __setitem__(self, key: str, value: any):
         self.__dict__[key] = value
 
-    def __call__(self, **kwargs):
-        doc = ""
-        if "doc" in kwargs:
-            doc = kwargs["doc"]
-            del kwargs["doc"]
-        name = list(kwargs.keys())[0]
-        self[name] = kwargs[name]
-        self.__doc[name] = doc
-        return self
-
     def get(self, key: str) -> any:
         return self.__dict__.get(key, None)
 
+    def _update(self, preconfig, config):
+        for key in config.keys():
+            if isinstance(config[key], Config):
+                if key not in preconfig.keys():
+                    preconfig[key] = config[key]
+                preconfig[key] = self._update(preconfig[key], config[key])
+            else:
+                preconfig[key] = config[key]
+                if key in config.__docs__:
+                    preconfig.__docs__ = config.__docs__[key]
+        return preconfig
+
     def update(self, config):
-        self.__dict__.update(config.__dict__)
+        self = self._update(self, config)
 
     def __iadd__(self, other):
         name = list(other.keys())[0]
         value = other[name]
-        doc = other.__docs__[name]
+        if name in other.__docs__:
+            doc = other.__docs__[name]
+            self.__docs__[name] = doc
         self[name] = value
-        self.__docs__[name] = doc
         self.__fromparam__ = False
         if "__fromparam__" in self.__docs__:
             del self.__docs__["__fromparam__"]
@@ -117,6 +124,9 @@ class Config:
                   file=sys.stderr)
             sys.exit(1)
 
+    def doc(self, var: str, doc: str):
+        self.__docs__[var] = doc
+
 
 class Param:
     def __new__(cls, **kwargs):
@@ -130,7 +140,7 @@ class Param:
             sys.exit(1)
 
         name = list(kwargs.keys())[0]
-        doc = ""
+        doc = None
         if len(kwargs) == 2:
             if "doc" in kwargs:
                 doc = kwargs["doc"]
@@ -145,7 +155,8 @@ class Param:
         config = Config()
         config.__fromparam__ = True
         config[name] = value
-        config.__docs__[name] = doc
+        if doc is not None:
+            config.__docs__[name] = doc
         return config
 
 
@@ -171,6 +182,15 @@ class ConfigGenerator:
     config += Param(apikey=os.environ["HUNABKU_APIKEY"] if "HUNABKU_APIKEY" in os.environ else "colavudea",
                     doc="Apikey for authentication."
                     )
+
+    config += Param(plugin_prefix="hunabku",
+                    doc="Hunabku search the plugins using the prefix hunabku,"
+                        "but if you want to personalize your own server you can change the prefix"
+                    )
+
+    config.apidoc += Param(apidoc_dir='hunabku_website',
+                           doc="apidocs output directoy"
+                           )
 
     def generate_config(self, output_file, hunabku, overwrite):
         if len(hunabku.plugins) == 0:
@@ -231,7 +251,9 @@ class ConfigGenerator:
                     info[f".{key}"] = self.parse_config(config[key], False)
             else:
                 value = config[key]
-                doc = config.__docs__[key]
+                doc = ""
+                if key in config.__docs__:
+                    doc = config.__docs__[key]
                 info[key] = {'value': value, 'doc': doc}
 
         return info
