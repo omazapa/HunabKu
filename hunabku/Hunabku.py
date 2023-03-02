@@ -50,7 +50,7 @@ class Hunabku:
         self.apidoc_config_dir = self.apidoc_dir + '/config'
         self.apidoc_config_data = {}
         self.apidoc_config_data['url'] = 'http://' + \
-            config.host + ':' + str(config.port) + '/apidoc'
+            config.host + ':' + str(config.port)
         self.apidoc_config_data['sampleUrl'] = 'http://' + \
             config.host + ':' + str(config.port)
         self.apidoc_config_data['header'] = {}
