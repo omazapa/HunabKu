@@ -3,6 +3,7 @@
 from hunabku.HunabkuBase import set_verbose
 from hunabku.Hunabku import Hunabku
 from hunabku.Config import ConfigGenerator
+from hunabku.PluginGenerator import PluginGenerator
 import argparse
 import importlib
 import sys
@@ -20,6 +21,8 @@ parser.add_argument('--generate_config', type=str,
 parser.add_argument('--overwrite', action='store_true',
                     help='If True, overwrites config file when it is generated.')
 
+parser.add_argument('--generate_plugin', type=str,
+                    help='Generate a plugin package directory, please privide the plugin name ex: --generate_plugin test  , the output is Hunabku_test')
 
 
 args = parser.parse_args()
@@ -38,11 +41,15 @@ if __name__ == '__main__':
     server = Hunabku(config)
     if args.generate_config:
         set_verbose(False)
-        if not config_gen.generate_config(args.generate_config,server,args.overwrite):
+        if not config_gen.generate_config(args.generate_config, server, args.overwrite):
             print(f"ERROR: file {args.generate_config} exists, use --overwrite to force the config file generation.", file = sys.stderr)
             sys.exit(1)
         else:
             sys.exit(0)
+    if args.generate_plugin:
+        pg = PluginGenerator(args.generate_plugin)
+        pg.generate()
+        sys.exit(0)
     server.apidoc_setup()
     server.load_plugins()
     server.generate_doc()
