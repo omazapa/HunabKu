@@ -64,7 +64,7 @@ def endpoint(path, methods):
 
         @wraps(func)
         def _impl(self, *method_args, **method_kwargs):
-            response = func(self)
+            response = func(self, *method_args, **method_kwargs)
             return response
         return _impl
     return wrapper
