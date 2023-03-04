@@ -155,8 +155,22 @@ class HunabkuPluginBase(object):
         )
         return response
 
+    def badrequest_error(self):
+        """
+        return defualt bad request error
+        """
+        data = {"error": "Bad Request",
+                "message": "Invalid parameters passed. Please fix your request with valid parameters."}
+        response = self.app.response_class(response=self.json.dumps(data),
+                                            status=400,
+                                            mimetype='application/json')
+        return response
+
     def valid_apikey(self):
-        apikey = self.request.args.get('apikey')
+        if self.request.method == 'POST':
+            apikey = self.request.form.get('apikey')
+        else:
+            apikey = self.request.args.get('apikey')
         if self.global_config["apikey"] == apikey:
             return True
         else:
@@ -174,6 +188,21 @@ class HunabkuPluginBase(object):
                 methods = endpoint_data['methods']
                 func = getattr(self, func_name)
                 self.app.add_url_rule(path, view_func=func, methods=methods)
+
+    def valid_parameters(self, params):
+        """
+        Method to check is the parameters passed to the endpoint are valid,
+        if unkown parameter is passed, a bad request is returned.
+        """
+        if self.request.method == 'POST':
+            args = self.request.form
+        else:
+            args = self.request.args
+
+        for rarg in args:
+            if rarg not in params:
+                return False
+        return True
 
     @classmethod
     def get_global_endpoints(cls):
