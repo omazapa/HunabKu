@@ -43,7 +43,7 @@ class Hunabku:
         """
         self.config.update(config)
         self.plugin_prefix = "hunabku"
-        self.apidoc_dir = 'hunabku_website'
+        self.apidoc_dir = self.config.apidoc
         self.apidoc_static_dir = self.apidoc_dir + '/static'
         self.apidoc_output_dir = self.apidoc_dir + '/static/apidoc'
         self.apidoc_templates_dir = self.apidoc_dir + '/templates'
@@ -69,9 +69,6 @@ class Hunabku:
             static_folder=self.apidoc_static_dir,
             static_url_path='/',
             template_folder=self.apidoc_templates_dir)
-        # self.apidoc_setup()
-        # self.load_plugins()
-        # self.generate_doc()
 
     def apidoc_setup(self):
         """
