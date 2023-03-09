@@ -2,15 +2,16 @@ from flask import (
     Flask
 )
 
-from pymongo import MongoClient
-
 import logging
 
 import os
+from hunabku.HunabkuBase import HunabkuPluginBase
+from hunabku.Config import ConfigGenerator, Config
 from hunabku._version import get_version
 from shutil import rmtree
 from distutils.dir_util import copy_tree
 import subprocess
+import inspect
 import glob
 import time
 import pathlib
@@ -18,23 +19,19 @@ import sys
 import importlib
 import json
 
+import pkgutil
+
 
 class Hunabku:
     """
-    Class to serve papers information store in a mongodb database throught an API using flask.
+    Class to serve papers information store in a mongodb database through an API using flask.
 
     example:
     http://0.0.0.0:5000/data/redalyc?init=1&end&apikey=pl0ok9ij8uh7yg
     """
-
-    def __init__(
-            self,
-            apikey,
-            dburi='mongodb://localhost:27017/',
-            ip='127.0.0.1',
-            port=8080,
-            log_file='hunabku.log',
-            info_level=logging.DEBUG):
+    config = ConfigGenerator.config
+    
+    def __init__(self, config:Config):
         """
         Contructor to initialize configuration options.
 
@@ -44,21 +41,18 @@ class Hunabku:
             port (int): port for the server
             info_level (logging.DEBUG/INFO etc..): enable/disable debug mode with extra messages output.
         """
-        self.dburi = dburi
-        self.dbclient = MongoClient(dburi)
-        self.ip = ip
-        self.port = port
-        self.info_level = info_level
-        self.apikey = apikey
-        self.apidoc_dir = 'hunabku_website'
+        self.config.update(config)
+        self.plugin_prefix = "hunabku"
+        self.apidoc_dir = self.config.apidoc
         self.apidoc_static_dir = self.apidoc_dir + '/static'
         self.apidoc_output_dir = self.apidoc_dir + '/static/apidoc'
         self.apidoc_templates_dir = self.apidoc_dir + '/templates'
         self.apidoc_config_dir = self.apidoc_dir + '/config'
         self.apidoc_config_data = {}
         self.apidoc_config_data['url'] = 'http://' + \
-            ip + ':' + str(port) + '/apidoc'
-        self.apidoc_config_data['sampleUrl'] = 'http://' + ip + ':' + str(port)
+            config.host + ':' + str(config.port)
+        self.apidoc_config_data['sampleUrl'] = 'http://' + \
+            config.host + ':' + str(config.port)
         self.apidoc_config_data['header'] = {}
         self.apidoc_config_data['header']['filename'] = self.apidoc_config_dir + \
             '/apidoc-header.md'
@@ -68,17 +62,13 @@ class Hunabku:
         self.pkg_templates_dir = str(
             pathlib.Path(__file__).parent.absolute()) + '/templates/'
         self.plugins = []
-        self.log_file = log_file
         self.logger = logging.getLogger(__name__)
-        self.set_info_level(info_level)
+        self.set_info_level(config["info_level"])
         self.app = Flask(
             'hanubku',
             static_folder=self.apidoc_static_dir,
             static_url_path='/',
             template_folder=self.apidoc_templates_dir)
-        self.apidoc_setup()
-        self.load_plugins()
-        self.generate_doc()
 
     def apidoc_setup(self):
         """
@@ -160,30 +150,58 @@ class Hunabku:
         Information level for debug or verbosity of the application (https://docs.python.org/3.1/library/logging.html)
         """
         if info_level != logging.DEBUG:
-            logging.basicConfig(filename=self.log_file, level=info_level)
-        self.info_level = info_level
+            logging.basicConfig(
+                filename=self.config["log_file"], level=info_level)
+        self.config["info_level"] = info_level
 
-    def load_plugins(self):
+    def load_plugins(self, verbose=True):
         """
         This method return the plugins found in the folder plugins.
         """
-        self.logger.warning('-----------------------')
-        self.logger.warning('------ Loagind Plugins:')
-        for path in glob.glob(
-                str(pathlib.Path(__file__).parent.absolute()) + "/plugins/*.py"):
-            name = path.split(os.path.sep)[-1].replace('.py', '')
-            print('------ Loading plugin: ' + name)
-            spec = importlib.util.spec_from_file_location(name, path)
-            module = spec.loader.load_module()
-            plugin_class = getattr(module, name)
-            instance = plugin_class(self)
-            instance.register_endpoints()
-            plugin = {}
-            plugin['name'] = name
-            plugin['path'] = path
-            plugin['spec'] = spec
-            plugin['instance'] = instance
-            self.plugins.append(plugin)
+        if verbose:
+            self.logger.warning('-----------------------')
+            self.logger.warning('------ Loagind Plugins:')
+        discovered_plugins = {
+            name: importlib.import_module(name)
+            for finder, name, ispkg
+            in pkgutil.iter_modules()
+            if name.startswith(self.plugin_prefix + '_')
+        }
+        for discovered_plugin in discovered_plugins:
+            for path in glob.glob(
+                    str(discovered_plugins[discovered_plugin].__path__[0]) + "/endpoints/*.py"):
+                mname = path.split(os.path.sep)[-1].replace('.py', '')
+                if verbose:
+                    self.logger.warning(
+                        f'------ Loading plugin module: {discovered_plugin} {mname}')
+                spec = importlib.util.spec_from_file_location(mname, path)
+                module = spec.loader.load_module()
+                for cname, plugin_class in inspect.getmembers(module):
+                    if inspect.isclass(plugin_class) and issubclass(plugin_class, HunabkuPluginBase) and cname.startswith(mname):
+                        if verbose:
+                            self.logger.warning(
+                                f'------ Registering plugin class: {mname}.{cname}')
+                        instance = plugin_class(self)
+                        instance.register_endpoints()
+                        plugin = {}
+
+                        plugin['package'] = discovered_plugin
+                        plugin['mod_name'] = mname
+                        plugin['class'] = plugin_class
+                        plugin['class_name'] = cname
+                        plugin['name'] = f"{discovered_plugin}.{mname}.{cname}"
+                        plugin['path'] = path
+                        plugin['spec'] = spec
+                        plugin['instance'] = instance
+                        if discovered_plugin in self.config.keys():
+                            if mname in self.config[discovered_plugin].keys():
+                                if cname in self.config[discovered_plugin][mname].keys():
+                                    instance.config.update(self.config[discovered_plugin][mname][cname])
+                        self.plugins.append(plugin)
+                        if verbose:
+                            self.logger.warning(
+                                f'------ Registered plugin class: {mname}.{cname}  DONE')
+                        
 
     def check_apidoc_syntax(self, plugin_file):
         """
@@ -191,16 +209,19 @@ class Hunabku:
         for apidoc  files generation.
         The the syntax is wrong, the Hunabku server can not start.
         """
-        args = ['apidoc', '-c', self.apidoc_config_dir, '-i',
-                str(pathlib.Path(__file__).parent.absolute()) + '/plugins/',
-                '--simulate',
+        args = ['apidoc', '-c', self.apidoc_config_dir + os.path.sep + "apidoc.json", '-i',
+                str(pathlib.Path(plugin_file).parent.absolute()),
+                '--dry-run',
                 '-f',
                 plugin_file]
         process = subprocess.run(args,
                                  stdout=subprocess.PIPE)
         if process.returncode != 0:
-            self.logger.error('------ERROR: parsing docstring for apidocs in plugin ' + plugin_file)
-            self.logger.error('             server can not start until apidocs syntax is fixed')
+            self.logger.error(
+                '------ERROR: parsing docstring for apidocs in plugin ' + plugin_file)
+            self.logger.error(
+                '             server can not start until apidocs syntax is fixed')
+            self.logger.error(process)
             sys.exit(1)
 
     def generate_doc(self, timeout=1, maxtries=5):
@@ -211,11 +232,13 @@ class Hunabku:
         self.logger.warning('------ Creating documentation')
 
         rmtree(self.apidoc_static_dir, ignore_errors=True)
-        args = ['apidoc', '-c', self.apidoc_config_dir, '-i',
-                str(pathlib.Path(__file__).parent.absolute()) + '/plugins/']
+        args = ['apidoc', '-c', self.apidoc_config_dir +
+                os.path.sep + "apidoc.json"]
 
         for plugin in self.plugins:
             self.check_apidoc_syntax(plugin['path'])
+            args.append('-i')
+            args.append(str(pathlib.Path(plugin['path']).parent.absolute()))
             args.append('-f')
             args.append(plugin['path'])
         args.append('-o')
@@ -231,10 +254,11 @@ class Hunabku:
                 process.kill()
                 break
         self.logger.warning(
-            '------ Apidocs at http://{}:{}/apidoc/index.html'.format(self.ip, self.port))
+            '------ Apidocs at http://{}:{}/apidoc/index.html'.format(self.config.host, self.config.port))
 
     def start(self):
         """
         Method to start server
         """
-        self.app.run(host=self.ip, port=self.port, debug=True)
+        self.app.run(host=self.config.host, port=self.config.port,
+                     debug=True, use_reloader=self.config.use_reloader)

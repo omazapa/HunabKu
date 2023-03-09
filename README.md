@@ -1,12 +1,15 @@
 <center><img src="https://raw.githubusercontent.com/colav/colav.github.io/master/img/Logo.png"/></center>
 
 # HunabKu  
-Data Server Gateway/  Maya - father of all gods
+Modular APIs creation using plugins system/  Maya - father of all gods
 
 # Description
-Package to load data in MongoDB and to serve the data from mongodb on endpoints using flask. 
+Package to create APIs endpoints using flask behind.
 The package is handling the endpoints  using a customized plugin system designed by us.
 
+# Plugin
+Take a look on plugins examples in the repository
+https://github.com/colav/HunabKu_plugins 
 
 # Installation
 
@@ -15,12 +18,8 @@ The package is handling the endpoints  using a customized plugin system designed
     * Debian based system: `apt-get install nodejs`
     * Redhat based system: `yum install nodejs`
     * Conda: `conda install nodejs==10.13.0`
-* Install Apidocjs `npm install -g apidoc@0.29.0` as root!
+* Install Apidocjs `npm install -g apidoc` as root!
 * The other dependecies can be installed with pip installing this package.
-* Install MongoDB
-    * Debian based system: `apt-get install mongodb`
-    * Redhat based system instructions [here](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-red-hat/)
-    * Conda: `conda install mongodb mongo-tools`
 
 NOTE:
 
@@ -38,16 +37,17 @@ mongodb mongod --dbpath $HOME/data/db/
 `pip install hunabku`
 
 # Usage
-Let's start the server executing
+
+Let's start creating a config file
 ```.sh
-hunabku_server
-```
-Or using some command line options
-```.sh
-hunabku_server --port 8080 --db_ip x.x.x.x
+hunabku_server --generate_config config.py --overwrite
 ```
 
-where x.x.x.x is your mongodb ip
+Let's start the server executing
+```.sh
+hunabku_server --config config.py
+```
+
 
 you can access to the apidoc documentation for the endpoints for example on: http://127.0.1.1:8888/apidoc/index.html
 

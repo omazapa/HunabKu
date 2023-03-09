@@ -5,7 +5,7 @@ from flask import (
 )
 from bson import ObjectId
 from functools import wraps
-
+from hunabku.Config import Config
 
 class HunabkuJsonEncoder(json.JSONEncoder):
     """
@@ -21,7 +21,11 @@ class HunabkuJsonEncoder(json.JSONEncoder):
 
 
 _endpoints = {}  # global hidden dictionary to register every endpoint by plugin
+_verbose = True
 
+def set_verbose(status):
+    global _verbose
+    _verbose = status
 
 def endpoint(path, methods):
     """
@@ -49,7 +53,9 @@ def endpoint(path, methods):
     """
     def wrapper(func):
         global _endpoints
-        print('------ Adding endpoint ' + path + ' with methods' + str(methods))
+        global _verbose
+        if _verbose:
+            print('------ Adding endpoint ' + path + ' with methods' + str(methods))
         class_name, func_name = func.__qualname__.split('.')
         if class_name not in _endpoints:
             _endpoints[class_name] = []
@@ -58,13 +64,16 @@ def endpoint(path, methods):
 
         @wraps(func)
         def _impl(self, *method_args, **method_kwargs):
-            response = func(self)
+            response = func(self, *method_args, **method_kwargs)
             return response
+        _impl.__name__ = func.__qualname__ ##WARNING: this is required to avoid overwrite methods in the class
         return _impl
     return wrapper
 
 
-class HunabkuPluginBase:
+class HunabkuPluginBase(object):
+    config = Config()
+
     def __init__(self, hunabku):
         """
         Base class to handle the plugins.
@@ -76,12 +85,7 @@ class HunabkuPluginBase:
         that is going to hanlde the endpoint.
 
         """
-        self.dburi = hunabku.dburi
-        self.dbclient = hunabku.dbclient
-        self.ip = hunabku.ip
-        self.port = hunabku.port
-        self.info_level = hunabku.info_level
-        self.apikey = hunabku.apikey
+        self.global_config = hunabku.config
         self.app = hunabku.app
         self.request = request
         self.json = json
@@ -152,9 +156,23 @@ class HunabkuPluginBase:
         )
         return response
 
+    def badrequest_error(self):
+        """
+        return defualt bad request error
+        """
+        data = {"error": "Bad Request",
+                "message": "Invalid parameters passed. Please fix your request with valid parameters."}
+        response = self.app.response_class(response=self.json.dumps(data),
+                                            status=400,
+                                            mimetype='application/json')
+        return response
+
     def valid_apikey(self):
-        apikey = self.request.args.get('apikey')
-        if self.apikey == apikey:
+        if self.request.method == 'POST':
+            apikey = self.request.form.get('apikey')
+        else:
+            apikey = self.request.args.get('apikey')
+        if self.global_config["apikey"] == apikey:
             return True
         else:
             return False
@@ -164,7 +182,7 @@ class HunabkuPluginBase:
         Method to register all the endpoints in flask's app
         """
         global _endpoints
-        if self.is_valid_endpoints():
+        if self.has_valid_endpoints():
             for endpoint_data in _endpoints[type(self).__name__]:
                 path = endpoint_data['path']
                 func_name = endpoint_data['func_name']
@@ -172,14 +190,30 @@ class HunabkuPluginBase:
                 func = getattr(self, func_name)
                 self.app.add_url_rule(path, view_func=func, methods=methods)
 
-    def get_global_endpoints(self):
+    def valid_parameters(self, params):
+        """
+        Method to check is the parameters passed to the endpoint are valid,
+        if unkown parameter is passed, a bad request is returned.
+        """
+        if self.request.method == 'POST':
+            args = self.request.form
+        else:
+            args = self.request.args
+
+        for rarg in args:
+            if rarg not in params:
+                return False
+        return True
+
+    @classmethod
+    def get_global_endpoints(cls):
         """
         Method to return the global dictionary with all
         the registers  loaded
         """
         return _endpoints
 
-    def is_valid_endpoints(self):
+    def has_valid_endpoints(self):
         """
         This method checks before to load the plugin if any paths in the endpoint is repeated.
         this platform does not allows overwrite endpoint paths.

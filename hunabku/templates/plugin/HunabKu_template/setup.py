@@ -51,10 +51,10 @@ if os.name in ('nt', 'dos'):
 def main():
     setup(
         # Application name:
-        name="Hunabku",
+        name="Hunabku_template",
 
         # Version number (initial):
-        version=get_version('hunabku/_version.py'),
+        version=get_version('hunabku_template/_version.py'),
 
         # Application author details:
         author="Colav",
@@ -67,31 +67,23 @@ def main():
         include_package_data=True,
 
         # Details
-        url="https://github.com/colav/Hunabku",
-        scripts=['bin/hunabku_server'],
+        url="https://github.com/colav/Hunabku_plugins",
         #
         license="BSD",
 
-        description="Papers database endpoint API",
+        description="Hunabku plguin",
 
         long_description=open("README.md").read(),
 
         long_description_content_type="text/markdown",
 
         # Dependent packages (distributions)
+        # put you packages here
         install_requires=[
-            'pymongo>=3.10.1',
             'flask>=1.1.2',
-            'pandas',
-            'numpy',
             'requests>=2.22.0',
-            'joblib>=0.14.1'
+            'hunabku'
         ],
-        extras_require={
-        'scienti': [
-            'hunabku_scienti',
-        ]
-    }
     )
 
 
