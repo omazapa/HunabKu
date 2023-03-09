@@ -176,7 +176,7 @@ class Hunabku:
                 mname = path.split(os.path.sep)[-1].replace('.py', '')
                 if verbose:
                     self.logger.warning(
-                        '------ Loading plugin module: ' + mname)
+                        f'------ Loading plugin module: {discovered_plugin} {mname}')
                 spec = importlib.util.spec_from_file_location(mname, path)
                 module = spec.loader.load_module()
                 for cname, plugin_class in inspect.getmembers(module):
