@@ -53,6 +53,8 @@ def main():
         # Application name:
         name="Hunabku",
 
+        python_requires='>3.8',
+
         # Version number (initial):
         version=get_version('hunabku/_version.py'),
 
@@ -85,10 +87,10 @@ def main():
             'bson'
         ],
         extras_require={
-        'scienti': [
-            'hunabku_scienti',
-        ]
-    }
+            'scienti': [
+                'hunabku_scienti',
+            ]
+        }
     )
 
 
