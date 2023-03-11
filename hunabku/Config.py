@@ -59,7 +59,7 @@ class Config:
             self.__dict__[key] = Config()
             return self.__dict__[key]
 
-    def keys(self) -> list[str]:
+    def keys(self):
         _keys = list(self.__dict__.keys())
         _keys.remove("__docs__")
         _keys.remove("__fromparam__")

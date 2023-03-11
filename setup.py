@@ -53,6 +53,8 @@ def main():
         # Application name:
         name="Hunabku",
 
+        python_requires='>3.8',
+
         # Version number (initial):
         version=get_version('hunabku/_version.py'),
 
@@ -72,7 +74,7 @@ def main():
         #
         license="BSD",
 
-        description="Papers database endpoint API",
+        description="Modular APIs creation using plugins system",
 
         long_description=open("README.md").read(),
 
@@ -80,18 +82,15 @@ def main():
 
         # Dependent packages (distributions)
         install_requires=[
-            'pymongo>=3.10.1',
             'flask>=1.1.2',
-            'pandas',
-            'numpy',
             'requests>=2.22.0',
-            'joblib>=0.14.1'
+            'bson'
         ],
         extras_require={
-        'scienti': [
-            'hunabku_scienti',
-        ]
-    }
+            'scienti': [
+                'hunabku_scienti',
+            ]
+        }
     )
 
 
