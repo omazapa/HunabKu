@@ -43,7 +43,7 @@ class Hunabku:
         """
         self.config.update(config)
         self.plugin_prefix = "hunabku"
-        self.apidoc_dir = self.config.apidoc
+        self.apidoc_dir = self.config.apidoc.apidoc_dir
         self.apidoc_static_dir = self.apidoc_dir + '/static'
         self.apidoc_output_dir = self.apidoc_dir + '/static/apidoc'
         self.apidoc_templates_dir = self.apidoc_dir + '/templates'
