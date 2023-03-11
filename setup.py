@@ -72,7 +72,7 @@ def main():
         #
         license="BSD",
 
-        description="Papers database endpoint API",
+        description="Modular APIs creation using plugins system",
 
         long_description=open("README.md").read(),
 
@@ -80,12 +80,8 @@ def main():
 
         # Dependent packages (distributions)
         install_requires=[
-            'pymongo>=3.10.1',
             'flask>=1.1.2',
-            'pandas',
-            'numpy',
             'requests>=2.22.0',
-            'joblib>=0.14.1'
         ],
         extras_require={
         'scienti': [
