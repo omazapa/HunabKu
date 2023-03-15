@@ -217,11 +217,13 @@ class ConfigGenerator:
 
         # appening plugins documentatiom to current object
         for plugin in hunabku.plugins:
-            self.config[plugin["package"]] = Config()
-            self.config[plugin["package"]][plugin["mod_name"]] = Config()
-            self.config[plugin["package"]][plugin["mod_name"]
-                                           ][plugin["class_name"]] = plugin['class'].config
+            if plugin["package"] not in self.config.keys():
+                self.config[plugin["package"]] = Config()
 
+            if plugin["mod_name"] not in self.config[plugin["package"]].keys():
+                self.config[plugin["package"]][plugin["mod_name"]] = Config()
+
+            self.config[plugin["package"]][plugin["mod_name"]][plugin["class_name"]] = plugin['class'].config
         config_dict = self.parse_config(self.config)
         config_dict = self.parse_paths(config_dict)
         output = "from hunabku.Config import Config"+os.linesep
@@ -234,7 +236,7 @@ class ConfigGenerator:
 
             comments = doc.split(os.linesep)
             for comment in comments:
-                output += f"# {comment}"+os.linesep
+                output += f"#{comment}"+os.linesep
 
             if isinstance(value, str):
                 output += f'{key} = "{value}"'+os.linesep*2
