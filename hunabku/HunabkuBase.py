@@ -6,6 +6,9 @@ from flask import (
 from bson import ObjectId
 from functools import wraps
 from hunabku.Config import Config
+import inspect
+import os
+
 
 class HunabkuJsonEncoder(json.JSONEncoder):
     """
@@ -23,13 +26,15 @@ class HunabkuJsonEncoder(json.JSONEncoder):
 _endpoints = {}  # global hidden dictionary to register every endpoint by plugin
 _verbose = True
 
+
 def set_verbose(status):
     global _verbose
     _verbose = status
 
+
 def endpoint(path, methods):
     """
-    Specilaized decorator to use in the methods of the class that inherit from  HunabkuPluginBase
+    Specialized decorator to use in the methods of the class that inherit from  HunabkuPluginBase
     this decorator allows to register the path and methods [GET,POST,DELETE,PUT]
     in the flask app.
 
@@ -54,19 +59,32 @@ def endpoint(path, methods):
     def wrapper(func):
         global _endpoints
         global _verbose
-        if _verbose:
-            print('------ Adding endpoint ' + path + ' with methods' + str(methods))
+        current_frame = inspect.currentframe()
+
+        caller_frame = inspect.getouterframes(current_frame, 2)[1]
+        filename = caller_frame.filename
+        package_name = caller_frame.filename.split(
+            "endpoints")[0].split(os.sep)[-2]
         class_name, func_name = func.__qualname__.split('.')
+
+        if _verbose:
+            print(
+                f'------ Adding endpoint {path} with methods {str(methods)} from package = {package_name} class = {class_name} func_name = {func_name}')
+
+        # if package_name not in _endpoints:
+        #    _endpoints[package_name] = []
+        # _endpoints[package_name].append(
         if class_name not in _endpoints:
             _endpoints[class_name] = []
         _endpoints[class_name].append(
-            {'path': path, 'methods': methods, 'func_name': func_name})
+            {'path': path, 'methods': methods, 'func_name': func_name, 'class_name': class_name, 'file': filename})
 
         @wraps(func)
         def _impl(self, *method_args, **method_kwargs):
             response = func(self, *method_args, **method_kwargs)
             return response
-        _impl.__name__ = func.__qualname__ ##WARNING: this is required to avoid overwrite methods in the class
+        # WARNING: this is required to avoid overwrite methods in the class
+        _impl.__name__ = func.__qualname__
         return _impl
     return wrapper
 
@@ -163,8 +181,8 @@ class HunabkuPluginBase(object):
         data = {"error": "Bad Request",
                 "message": "Invalid parameters passed. Please fix your request with valid parameters."}
         response = self.app.response_class(response=self.json.dumps(data),
-                                            status=400,
-                                            mimetype='application/json')
+                                           status=400,
+                                           mimetype='application/json')
         return response
 
     def valid_apikey(self):

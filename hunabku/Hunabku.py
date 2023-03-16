@@ -30,8 +30,8 @@ class Hunabku:
     http://0.0.0.0:5000/data/redalyc?init=1&end&apikey=pl0ok9ij8uh7yg
     """
     config = ConfigGenerator.config
-    
-    def __init__(self, config:Config):
+
+    def __init__(self, config: Config):
         """
         Contructor to initialize configuration options.
 
@@ -196,12 +196,12 @@ class Hunabku:
                         if discovered_plugin in self.config.keys():
                             if mname in self.config[discovered_plugin].keys():
                                 if cname in self.config[discovered_plugin][mname].keys():
-                                    instance.config.update(self.config[discovered_plugin][mname][cname])
+                                    instance.config.update(
+                                        self.config[discovered_plugin][mname][cname])
                         self.plugins.append(plugin)
                         if verbose:
                             self.logger.warning(
                                 f'------ Registered plugin class: {mname}.{cname}  DONE')
-                        
 
     def check_apidoc_syntax(self, plugin_file):
         """

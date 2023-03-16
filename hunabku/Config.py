@@ -3,6 +3,7 @@ import sys
 import os
 import logging
 
+
 class Config:
     """
     Config class provides a way to create and manage a configuration object in Python.
@@ -223,7 +224,8 @@ class ConfigGenerator:
             if plugin["mod_name"] not in self.config[plugin["package"]].keys():
                 self.config[plugin["package"]][plugin["mod_name"]] = Config()
 
-            self.config[plugin["package"]][plugin["mod_name"]][plugin["class_name"]] = plugin['class'].config
+            self.config[plugin["package"]][plugin["mod_name"]
+                                           ][plugin["class_name"]] = plugin['class'].config
         config_dict = self.parse_config(self.config)
         config_dict = self.parse_paths(config_dict)
         output = "from hunabku.Config import Config"+os.linesep
