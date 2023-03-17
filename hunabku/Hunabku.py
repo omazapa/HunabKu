@@ -160,7 +160,7 @@ class Hunabku:
         """
         if verbose:
             self.logger.warning('-----------------------')
-            self.logger.warning('------ Loagind Plugins:')
+            self.logger.warning('------ Loading Plugins:')
         discovered_plugins = {
             name: importlib.import_module(name)
             for finder, name, ispkg
@@ -173,7 +173,7 @@ class Hunabku:
                 mname = path.split(os.path.sep)[-1].replace('.py', '')
                 if verbose:
                     self.logger.warning(
-                        f'------ Loading plugin module: {discovered_plugin} {mname}')
+                        f'------ Loading plugin module from package {discovered_plugin} and module {mname}.py :')
                 spec = importlib.util.spec_from_file_location(mname, path)
                 module = spec.loader.load_module()
                 for cname, plugin_class in inspect.getmembers(module):

@@ -8,6 +8,7 @@ from functools import wraps
 from hunabku.Config import Config
 import inspect
 import os
+import sys
 
 
 class HunabkuJsonEncoder(json.JSONEncoder):
@@ -69,14 +70,11 @@ def endpoint(path, methods):
 
         if _verbose:
             print(
-                f'------ Adding endpoint {path} with methods {str(methods)} from package = {package_name} class = {class_name} func_name = {func_name}')
+                f'------ Adding endpoint {path} with HTTP(S) methods {str(methods)} from class = {class_name} class method = {func_name}')
 
-        # if package_name not in _endpoints:
-        #    _endpoints[package_name] = []
-        # _endpoints[package_name].append(
-        if class_name not in _endpoints:
-            _endpoints[class_name] = []
-        _endpoints[class_name].append(
+        if package_name not in _endpoints:
+            _endpoints[package_name] = []
+        _endpoints[package_name].append(
             {'path': path, 'methods': methods, 'func_name': func_name, 'class_name': class_name, 'file': filename})
 
         @wraps(func)
@@ -201,12 +199,14 @@ class HunabkuPluginBase(object):
         """
         global _endpoints
         if self.has_valid_endpoints():
-            for endpoint_data in _endpoints[type(self).__name__]:
+            for endpoint_data in _endpoints[self._get_package_name()]:
                 path = endpoint_data['path']
                 func_name = endpoint_data['func_name']
                 methods = endpoint_data['methods']
                 func = getattr(self, func_name)
                 self.app.add_url_rule(path, view_func=func, methods=methods)
+        else:
+            sys.exit(1)
 
     def valid_parameters(self, params):
         """
@@ -236,18 +236,28 @@ class HunabkuPluginBase(object):
         This method checks before to load the plugin if any paths in the endpoint is repeated.
         this platform does not allows overwrite endpoint paths.
         """
+        global _endpoints
+        package_name = self._get_package_name()
+        class_name = type(self).__name__
         plugins = list(_endpoints.keys())
-        current = type(self).__name__
-        plugins.remove(current)
-        paths = []
-        for register in _endpoints[current]:
-            paths.append(register['path'])
-        for path in paths:
+        plugins.remove(package_name)
+        endpoints = []
+        for register in _endpoints[package_name]:
+            endpoints.append(register)
+
+        for endpoint in endpoints:
             for plugin in plugins:
                 for register in _endpoints[plugin]:
-                    if path == register['path']:
+                    if endpoint["path"] == register['path']:
                         self.logger.error(
-                            "ERROR: can't not load plugin, {} because the path {} is already loaded in plugin {}".format(
-                                current, path, plugin))
+                            f"ERROR: can't not load plugin, package {package_name} class {class_name} class_method {endpoint['func_name']} "
+                            f"because the path {endpoint['path']} is already loaded in plugin: package {plugin} class {register['class_name']} "
+                            f"class_method {register['func_name']}")
                         return False
         return True
+
+    def _get_package_name(self):
+        filename = inspect.getfile(self.__class__)
+        package_name = filename.split(
+            "endpoints")[0].split(os.sep)[-2]
+        return package_name
