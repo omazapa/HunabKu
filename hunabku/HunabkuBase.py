@@ -6,6 +6,10 @@ from flask import (
 from bson import ObjectId
 from functools import wraps
 from hunabku.Config import Config
+import inspect
+import os
+import sys
+
 
 class HunabkuJsonEncoder(json.JSONEncoder):
     """
@@ -20,16 +24,18 @@ class HunabkuJsonEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
-_endpoints = {}  # global hidden dictionary to register every endpoint by plugin
-_verbose = True
+class Globals:
+    endpoints = {}
+    verbose = True
+
 
 def set_verbose(status):
-    global _verbose
-    _verbose = status
+    Globals.verbose = status
+
 
 def endpoint(path, methods):
     """
-    Specilaized decorator to use in the methods of the class that inherit from  HunabkuPluginBase
+    Specialized decorator to use in the methods of the class that inherit from  HunabkuPluginBase
     this decorator allows to register the path and methods [GET,POST,DELETE,PUT]
     in the flask app.
 
@@ -52,21 +58,28 @@ def endpoint(path, methods):
 
     """
     def wrapper(func):
-        global _endpoints
-        global _verbose
-        if _verbose:
-            print('------ Adding endpoint ' + path + ' with methods' + str(methods))
+        current_frame = inspect.currentframe()
+
+        caller_frame = inspect.getouterframes(current_frame, 2)[1]
+        filename = caller_frame.filename
+        package_name = caller_frame.filename.split(
+            "endpoints")[0].split(os.sep)[-2]
         class_name, func_name = func.__qualname__.split('.')
-        if class_name not in _endpoints:
-            _endpoints[class_name] = []
-        _endpoints[class_name].append(
-            {'path': path, 'methods': methods, 'func_name': func_name})
+
+        if Globals.verbose:
+            print(
+                f'------ Adding endpoint {path} with HTTP(S) methods {str(methods)} from class = {class_name} class method = {func_name}')
+        if package_name not in Globals.endpoints:
+            Globals.endpoints[package_name] = []
+        Globals.endpoints[package_name].append(
+            {'path': path, 'methods': methods, 'func_name': func_name, 'class_name': class_name, 'file': filename})
 
         @wraps(func)
         def _impl(self, *method_args, **method_kwargs):
             response = func(self, *method_args, **method_kwargs)
             return response
-        _impl.__name__ = func.__qualname__ ##WARNING: this is required to avoid overwrite methods in the class
+        # WARNING: this is required to avoid overwrite methods in the class
+        _impl.__name__ = func.__qualname__
         return _impl
     return wrapper
 
@@ -163,8 +176,8 @@ class HunabkuPluginBase(object):
         data = {"error": "Bad Request",
                 "message": "Invalid parameters passed. Please fix your request with valid parameters."}
         response = self.app.response_class(response=self.json.dumps(data),
-                                            status=400,
-                                            mimetype='application/json')
+                                           status=400,
+                                           mimetype='application/json')
         return response
 
     def valid_apikey(self):
@@ -181,19 +194,20 @@ class HunabkuPluginBase(object):
         """
         Method to register all the endpoints in flask's app
         """
-        global _endpoints
         if self.has_valid_endpoints():
-            for endpoint_data in _endpoints[type(self).__name__]:
+            for endpoint_data in Globals.endpoints[self._get_package_name()]:
                 path = endpoint_data['path']
                 func_name = endpoint_data['func_name']
                 methods = endpoint_data['methods']
                 func = getattr(self, func_name)
                 self.app.add_url_rule(path, view_func=func, methods=methods)
+        else:
+            sys.exit(1)
 
     def valid_parameters(self, params):
         """
         Method to check is the parameters passed to the endpoint are valid,
-        if unkown parameter is passed, a bad request is returned.
+        if unkown parameter is passed, a bad request should be returned.
         """
         if self.request.method == 'POST':
             args = self.request.form
@@ -211,25 +225,45 @@ class HunabkuPluginBase(object):
         Method to return the global dictionary with all
         the registers  loaded
         """
-        return _endpoints
+        return Globals.endpoints
 
     def has_valid_endpoints(self):
         """
         This method checks before to load the plugin if any paths in the endpoint is repeated.
         this platform does not allows overwrite endpoint paths.
         """
-        plugins = list(_endpoints.keys())
-        current = type(self).__name__
-        plugins.remove(current)
-        paths = []
-        for register in _endpoints[current]:
-            paths.append(register['path'])
-        for path in paths:
+        package_name = self._get_package_name()
+        class_name = type(self).__name__
+        plugins = list(Globals.endpoints.keys())
+
+        endpoints = []
+        for register in Globals.endpoints[package_name]:
+            endpoints.append(register)
+        # checking if there are endpoints repeated in the same package
+        for register in Globals.endpoints[package_name]:
+            for endpoint in endpoints:
+                if endpoint != register:
+                    if endpoint["path"] == register["path"]:
+                        print(
+                            f"ERROR: can't not load plugin, package {package_name} class {class_name} class_method {endpoint['func_name']} file {endpoint['file']} "
+                            f"because the path {endpoint['path']} is already loaded in plugin: package {package_name} class {register['class_name']} "
+                            f"class_method {register['func_name']} file {register['file']}")
+                        return False
+        plugins.remove(package_name)
+        # checking if there are endpoints repeated in other packages
+        for endpoint in endpoints:
             for plugin in plugins:
-                for register in _endpoints[plugin]:
-                    if path == register['path']:
-                        self.logger.error(
-                            "ERROR: can't not load plugin, {} because the path {} is already loaded in plugin {}".format(
-                                current, path, plugin))
+                for register in Globals.endpoints[plugin]:
+                    if endpoint["path"] == register['path']:
+                        print(
+                            f"ERROR: can't not load plugin, package {package_name} class {class_name} class_method {endpoint['func_name']} file {endpoint['file']} "
+                            f"because the path {endpoint['path']} is already loaded in plugin: package {plugin} class {register['class_name']} "
+                            f"class_method {register['func_name']} file {register['file']}")
                         return False
         return True
+
+    def _get_package_name(self):
+        filename = inspect.getfile(self.__class__)
+        package_name = filename.split(
+            "endpoints")[0].split(os.sep)[-2]
+        return package_name
