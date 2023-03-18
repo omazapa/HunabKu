@@ -177,7 +177,7 @@ class Hunabku:
                 spec = importlib.util.spec_from_file_location(mname, path)
                 module = spec.loader.load_module()
                 for cname, plugin_class in inspect.getmembers(module):
-                    if inspect.isclass(plugin_class) and issubclass(plugin_class, HunabkuPluginBase) and cname.startswith(mname):
+                    if inspect.isclass(plugin_class) and issubclass(plugin_class, HunabkuPluginBase) and plugin_class is not HunabkuPluginBase:
                         if verbose:
                             self.logger.warning(
                                 f'------ Registering plugin class: {mname}.{cname}')
