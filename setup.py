@@ -83,8 +83,7 @@ def main():
         # Dependent packages (distributions)
         install_requires=[
             'flask>=1.1.2',
-            'requests>=2.22.0',
-            'bson'
+            'requests>=2.22.0'
         ],
         extras_require={
             'scienti': [

@@ -3,26 +3,11 @@ from flask import (
     json,
     request
 )
-from bson import ObjectId
 from functools import wraps
 from hunabku.Config import Config
 import inspect
 import os
 import sys
-
-
-class HunabkuJsonEncoder(json.JSONEncoder):
-    """
-    Custom JSON encoder for Hunabku,
-    all the customized stuff for encoding required for our endpoints
-    can be handle in this class
-    """
-
-    def default(self, o):
-        if isinstance(o, ObjectId):
-            return str(o)
-        return json.JSONEncoder.default(self, o)
-
 
 class Globals:
     endpoints = {}
@@ -104,58 +89,6 @@ class HunabkuPluginBase(object):
         self.json = json
         self.logger = hunabku.logger
         self.hunabku = hunabku
-        _dumps = self.json.dumps
-        _dump = self.json.dump
-
-        # added support to our json encoder
-        def json_dumps(
-                obj,
-                skipkeys=False,
-                ensure_ascii=True,
-                check_circular=True,
-                allow_nan=True,
-                cls=HunabkuJsonEncoder,
-                indent=None,
-                separators=None,
-                default=None,
-                sort_keys=False):
-            return _dumps(
-                obj=obj,
-                skipkeys=skipkeys,
-                ensure_ascii=ensure_ascii,
-                check_circular=check_circular,
-                allow_nan=allow_nan,
-                cls=cls,
-                indent=indent,
-                separators=separators,
-                default=default,
-                sort_keys=sort_keys)
-
-        def json_dump(
-                obj,
-                skipkeys=False,
-                ensure_ascii=True,
-                check_circular=True,
-                allow_nan=True,
-                cls=HunabkuJsonEncoder,
-                indent=None,
-                separators=None,
-                default=None,
-                sort_keys=False):
-            return _dump(
-                obj=obj,
-                skipkeys=skipkeys,
-                ensure_ascii=ensure_ascii,
-                check_circular=check_circular,
-                allow_nan=allow_nan,
-                cls=cls,
-                indent=indent,
-                separators=separators,
-                default=default,
-                sort_keys=sort_keys)
-        # custimized encoder use by default
-        self.json.dumps = json_dumps
-        self.json.dump = json_dump
 
     def apikey_error(self):
         """
