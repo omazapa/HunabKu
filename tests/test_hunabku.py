@@ -27,7 +27,7 @@ class TestHunabku(unittest.TestCase):
         self.server.generate_doc()
 
     def test_generate_config(self):
-        print('running generated config')
+        print('############################ running generated config ############################')
         res = run(['hunabku_server', '--generate_config', 'config.py'])
 
         print(res.output)
@@ -41,7 +41,7 @@ class TestHunabku(unittest.TestCase):
             sys.exit(res.exit)
 
     def test_generated_plugin(self):
-        print('running generaying plugin tests')
+        print('############################ running generaying plugin tests ############################')
         res = run(['hunabku_server', '--generate_plugin', 'test'])
         print(res.output.decode())
         if res.exit != 0:
@@ -62,7 +62,7 @@ class TestHunabku(unittest.TestCase):
         print(res.output.decode())
 
     def tearDown(self):
-        print('running tearDown')
+        print('############################ running tearDown ############################')
         rmtree("HunabKu_test", ignore_errors=True)
         rmtree("hunabku_website", ignore_errors=True)
 
