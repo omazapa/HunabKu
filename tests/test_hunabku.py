@@ -21,12 +21,14 @@ class TestHunabku(unittest.TestCase):
         self.config_gen = ConfigGenerator()
         self.config = self.config_gen.config
         self.server = Hunabku(self.config)
-        # Inicializa un cliente de pruebas de Flask
+
+    def test__loads(self):
         self.server.apidoc_setup()
         self.server.load_plugins()
         self.server.generate_doc()
+        rmtree("hunabku_website", ignore_errors=True)
 
-    def test_generate_config(self):
+    def test__generate_config(self):
         print('############################ running generated config ############################')
         res = run(['hunabku_server', '--generate_config', 'config.py'])
 
@@ -40,7 +42,7 @@ class TestHunabku(unittest.TestCase):
             print("ERROR: generating config overwriting")
             sys.exit(res.exit)
 
-    def test_generated_plugin(self):
+    def test__generated_plugin(self):
         print('############################ running generaying plugin tests ############################')
         res = run(['hunabku_server', '--generate_plugin', 'test'])
         print(res.output.decode())
@@ -64,8 +66,6 @@ class TestHunabku(unittest.TestCase):
     def tearDown(self):
         print('############################ running tearDown ############################')
         rmtree("HunabKu_test", ignore_errors=True)
-        rmtree("hunabku_website", ignore_errors=True)
-
         if os.path.exists("config.py"):
             os.remove("config.py")
 
