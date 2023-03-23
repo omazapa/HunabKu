@@ -1,3 +1,5 @@
+[![Python package](https://github.com/colav/HunabKu/actions/workflows/python-package.yml/badge.svg?branch=master)](https://github.com/colav/HunabKu/actions/workflows/python-package.yml) [![Upload Python Package](https://github.com/colav/HunabKu/actions/workflows/python-publish.yml/badge.svg)](https://github.com/colav/HunabKu/actions/workflows/python-publish.yml)
+
 <center><img src="https://raw.githubusercontent.com/colav/colav.github.io/master/img/Logo.png"/></center>
 
 # HunabKu  
