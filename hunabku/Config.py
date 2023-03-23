@@ -216,6 +216,18 @@ class ConfigGenerator:
         if len(hunabku.plugins) == 0:
             hunabku.load_plugins(verbose=False)
 
+        output = "from hunabku.Config import Config"+os.linesep
+        output += "config = Config()"+os.linesep*2
+        output += "######################################" + os.linesep
+        output += "# Hunabku Server config options below" + os.linesep
+        output += "######################################" + os.linesep
+
+        config_dict = self.parse_config(self.config)
+        config_dict = self.parse_paths(config_dict)
+        output += self.generate_output(config_dict)
+
+        self.config = Config()
+
         # appening plugins documentatiom to current object
         for plugin in hunabku.plugins:
             if plugin["package"] not in self.config.keys():
@@ -228,22 +240,14 @@ class ConfigGenerator:
                                            ][plugin["class_name"]] = plugin['class'].config
         config_dict = self.parse_config(self.config)
         config_dict = self.parse_paths(config_dict)
-        output = "from hunabku.Config import Config"+os.linesep
-        output += "config = Config()"+os.linesep*2
-        for key in config_dict.keys():
-            last = key.split(".")[-1]
-            output += f"# {last}"+os.linesep
-            doc = config_dict[key]["doc"]
-            value = config_dict[key]["value"]
 
-            comments = doc.split(os.linesep)
-            for comment in comments:
-                output += f"#{comment}"+os.linesep
-
-            if isinstance(value, str):
-                output += f'{key} = "{value}"'+os.linesep*2
-            else:
-                output += f'{key} = {value}'+os.linesep*2
+        output += "##################################################" + os.linesep
+        output += "# Hunabku Plugins config options below" + os.linesep
+        output += "##################################################" + os.linesep
+        output += "# The structure for config plugins are:" + os.linesep
+        output += "# config.hunabku_plugin.File.Class.option = value" + os.linesep
+        output += "##################################################" + os.linesep
+        output += self.generate_output(config_dict)
 
         if overwrite:
             with open(output_file, "w") as f:
@@ -258,6 +262,24 @@ class ConfigGenerator:
                     f.write(output)
                     f.close()
                 return True
+
+    def generate_output(self, config_dict: dict):
+        output = ""
+        for key in config_dict.keys():
+            last = key.split(".")[-1]
+            output += f"# {last}"+os.linesep
+            doc = config_dict[key]["doc"]
+            value = config_dict[key]["value"]
+
+            comments = doc.split(os.linesep)
+            for comment in comments:
+                output += f"#{comment}"+os.linesep
+
+            if isinstance(value, str):
+                output += f'{key} = "{value}"'+os.linesep*2
+            else:
+                output += f'{key} = {value}'+os.linesep*2
+        return output
 
     def parse_config(self, config: Config, root=True) -> dict:
         """
