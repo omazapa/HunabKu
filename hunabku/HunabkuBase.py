@@ -1,6 +1,5 @@
 
 from flask import (
-    json,
     request
 )
 from functools import wraps
@@ -8,6 +7,7 @@ from hunabku.Config import Config
 import inspect
 import os
 import sys
+import json
 
 class Globals:
     endpoints = {}
