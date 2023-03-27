@@ -9,6 +9,7 @@ import os
 import sys
 import json
 
+
 class Globals:
     endpoints = {}
     verbose = True
@@ -127,13 +128,17 @@ class HunabkuPluginBase(object):
         """
         Method to register all the endpoints in flask's app
         """
+        filename = inspect.getfile(self.__class__)
+        class_name = type(self).__name__
         if self.has_valid_endpoints():
             for endpoint_data in Globals.endpoints[self._get_package_name()]:
-                path = endpoint_data['path']
-                func_name = endpoint_data['func_name']
-                methods = endpoint_data['methods']
-                func = getattr(self, func_name)
-                self.app.add_url_rule(path, view_func=func, methods=methods)
+                if endpoint_data['file'] == filename and endpoint_data['class_name'] == class_name:
+                    path = endpoint_data['path']
+                    func_name = endpoint_data['func_name']
+                    methods = endpoint_data['methods']
+                    func = getattr(self, func_name)
+                    self.app.add_url_rule(
+                        path, view_func=func, methods=methods)
         else:
             sys.exit(1)
 
@@ -168,7 +173,6 @@ class HunabkuPluginBase(object):
         package_name = self._get_package_name()
         class_name = type(self).__name__
         plugins = list(Globals.endpoints.keys())
-
         endpoints = []
         for register in Globals.endpoints[package_name]:
             endpoints.append(register)

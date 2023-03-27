@@ -184,7 +184,6 @@ class Hunabku:
                         instance = plugin_class(self)
                         instance.register_endpoints()
                         plugin = {}
-
                         plugin['package'] = discovered_plugin
                         plugin['mod_name'] = mname
                         plugin['class'] = plugin_class
