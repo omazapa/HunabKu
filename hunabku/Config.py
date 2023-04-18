@@ -183,7 +183,7 @@ class Param:
 class ConfigGenerator:
     config = Config()
 
-    config += Param(host="localhost", doc="Hostname or ip for flask server.")
+    config += Param(host="0.0.0.0", doc="Hostname or ip for flask server.")
 
     config += Param(port=8080,
                     doc="Port for flask server.")
