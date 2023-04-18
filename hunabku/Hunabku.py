@@ -181,7 +181,15 @@ class Hunabku:
                         if verbose:
                             self.logger.warning(
                                 f'------ Registering plugin class: {mname}.{cname}')
+
+                        current_config = {}
+                        if discovered_plugin in self.config.keys():
+                            if mname in self.config[discovered_plugin].keys():
+                                if cname in self.config[discovered_plugin][mname].keys():
+                                    current_config = self.config[discovered_plugin][mname][cname]
+                        plugin_class.config.update(current_config)
                         instance = plugin_class(self)
+                        instance.config.update(current_config)
                         instance.register_endpoints()
                         plugin = {}
                         plugin['package'] = discovered_plugin
@@ -192,11 +200,6 @@ class Hunabku:
                         plugin['path'] = path
                         plugin['spec'] = spec
                         plugin['instance'] = instance
-                        if discovered_plugin in self.config.keys():
-                            if mname in self.config[discovered_plugin].keys():
-                                if cname in self.config[discovered_plugin][mname].keys():
-                                    instance.config.update(
-                                        self.config[discovered_plugin][mname][cname])
                         self.plugins.append(plugin)
                         if verbose:
                             self.logger.warning(
