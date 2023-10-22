@@ -96,7 +96,17 @@ class TestHunabku(unittest.TestCase):
                 print("INFO: loading multiple times the same endpoint not fail, TEST FAILED")
                 sys.exit(1)
 
-
+    def test__apidoc_endpoint(self):
+        print('############################ running apidoc service tests ############################')
+        res = run(['hunabku_server'])
+        print(res.output.decode())
+        if res.exit != 0:
+            print("ERROR: testing apidoc service")
+            sys.exit(res.exit)
+        req = requests.get("http://0.0.0.0:8080/apidoc/index.html")
+        if req.status_code != 200:
+            print("ERROR: testing apidoc service")
+            sys.exit(1)
 
     def tearDown(self):
         print('############################ running tearDown ############################')
