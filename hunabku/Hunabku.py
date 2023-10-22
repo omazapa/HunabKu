@@ -49,10 +49,15 @@ class Hunabku:
         self.apidoc_templates_dir = self.apidoc_dir + '/templates'
         self.apidoc_config_dir = self.apidoc_dir + '/config'
         self.apidoc_config_data = {}
-        self.apidoc_config_data['url'] = 'http://' + \
+        if self.config.apidoc.use_https:
+            protocol = 'https'
+        else:
+            protocol = 'http'
+        self.apidoc_config_data['url'] = f'{protocol}://' + \
             config.host + ':' + str(config.port)
-        self.apidoc_config_data['sampleUrl'] = 'http://' + \
+        self.apidoc_config_data['sampleUrl'] = f'{protocol}://' + \
             config.host + ':' + str(config.port)
+
         self.apidoc_config_data['header'] = {}
         self.apidoc_config_data['header']['filename'] = self.apidoc_config_dir + \
             '/apidoc-header.md'

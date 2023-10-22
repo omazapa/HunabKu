@@ -211,6 +211,9 @@ class ConfigGenerator:
     config.apidoc += Param(apidoc_dir='hunabku_website',
                            doc="apidocs output directoy"
                            )
+    config.apidoc += Param(use_https=False,
+                           doc="apidocs output uses http/https"
+                           )
 
     def generate_config(self, output_file, hunabku, overwrite):
         if len(hunabku.plugins) == 0:
