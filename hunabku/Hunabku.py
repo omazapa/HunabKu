@@ -53,10 +53,14 @@ class Hunabku:
             protocol = 'https'
         else:
             protocol = 'http'
+        if self.config.apidoc.show_port:
+            port = ':' + str(self.config.port)
+        else:
+            port = ''
         self.apidoc_config_data['url'] = f'{protocol}://' + \
-            config.host + ':' + str(config.port)
+            config.host + port
         self.apidoc_config_data['sampleUrl'] = f'{protocol}://' + \
-            config.host + ':' + str(config.port)
+            config.host + port
 
         self.apidoc_config_data['header'] = {}
         self.apidoc_config_data['header']['filename'] = self.apidoc_config_dir + \
