@@ -74,7 +74,7 @@ class Hunabku:
         self.logger = logging.getLogger(__name__)
         self.set_info_level(config["info_level"])
         self.app = Flask(
-            'hanubku',
+            'hunabku',
             static_folder=self.apidoc_static_dir,
             static_url_path='/',
             template_folder=self.apidoc_templates_dir)
