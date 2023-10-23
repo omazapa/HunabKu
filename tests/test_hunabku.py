@@ -2,7 +2,10 @@
 import requests
 import sys
 import os
+import time
+import signal
 from shutil import rmtree
+import subprocess
 from command import run, CommandException
 
 from hunabku.Hunabku import Hunabku
@@ -15,6 +18,7 @@ class TestHunabku(unittest.TestCase):
     """
     Class to tests hunabku server options
     """
+
     def setUp(self):
         print('running setUp')
         # Inicializa la aplicación Flask
@@ -90,23 +94,35 @@ class TestHunabku(unittest.TestCase):
             res = run(['hunabku_server'])
         except CommandException as e:
             print(e.output)
-            if e.exit  != 0:
-                print("INFO: loading multiple times the same endpoint fails, TEST PASSED")
+            if e.exit != 0:
+                print(
+                    "INFO: loading multiple times the same endpoint fails, TEST PASSED")
             else:
-                print("INFO: loading multiple times the same endpoint not fail, TEST FAILED")
+                print(
+                    "INFO: loading multiple times the same endpoint not fail, TEST FAILED")
                 sys.exit(1)
 
     def test__apidoc_endpoint(self):
         print('############################ running apidoc service tests ############################')
-        res = run(['hunabku_server'])
-        print(res.output.decode())
-        if res.exit != 0:
-            print("ERROR: testing apidoc service")
-            sys.exit(res.exit)
+        process = subprocess.Popen(
+            "hunabku_server", shell=False, preexec_fn=os.setsid)
+        if process.returncode is not None:
+            print("ERROR: running hunabku server")
+            sys.exit(process.returncode)
+        time.sleep(10)
         req = requests.get("http://0.0.0.0:8080/apidoc/index.html")
         if req.status_code != 200:
             print("ERROR: testing apidoc service")
-            sys.exit(1)
+            process.send_signal(signal.SIGINT)
+            process.wait()
+            if process.returncode != 0:
+                print("ERROR: killing hunabku server")
+            sys.exit(process.returncode)
+        process.send_signal(signal.SIGINT)
+        process.wait()
+        if process.returncode != 0:
+            print("ERROR: killing hunabku server")
+            sys.exit(process.returncode)
 
     def tearDown(self):
         print('############################ running tearDown ############################')
@@ -124,6 +140,7 @@ class TestHunabku(unittest.TestCase):
         print(res.output.decode())
         if res.exit != 0:
             print("ERROR: uninstalling test plugin")
+
 
 if __name__ == '__main__':
     unittest.main()
