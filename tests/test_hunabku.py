@@ -104,6 +104,17 @@ class TestHunabku(unittest.TestCase):
 
     def test__apidoc_endpoint(self):
         print('############################ running apidoc service tests ############################')
+        res = run(['hunabku_server', '--generate_plugin', 'apidoc'])
+        print(res.output.decode())
+        if res.exit != 0:
+            print("ERROR: generating config plugin")
+            sys.exit(res.exit)
+        res = run(['pip', 'install', './HunabKu_apidoc'])
+        print(res.output.decode())
+        if res.exit != 0:
+            print("ERROR: generating config plugin")
+            sys.exit(res.exit)
+
         process = subprocess.Popen(
             "hunabku_server", shell=False, preexec_fn=os.setsid)
         if process.returncode is not None:
@@ -128,6 +139,7 @@ class TestHunabku(unittest.TestCase):
         print('############################ running tearDown ############################')
         rmtree("HunabKu_test", ignore_errors=True)
         rmtree("HunabKu_test2", ignore_errors=True)
+        rmtree("Hunabku_apidoc", ignore_errors=True)
         if os.path.exists("config.py"):
             os.remove("config.py")
 
@@ -139,8 +151,12 @@ class TestHunabku(unittest.TestCase):
         res = run(['pip', 'uninstall', '-y', 'hunabku_test2'])
         print(res.output.decode())
         if res.exit != 0:
-            print("ERROR: uninstalling test plugin")
+            print("ERROR: uninstalling test2 plugin")
 
+        res = run(['pip', 'uninstall', '-y', 'hunabku_apidoc'])
+        print(res.output.decode())
+        if res.exit != 0:
+            print("ERROR: uninstalling apidoc plugin")
 
 if __name__ == '__main__':
     unittest.main()
