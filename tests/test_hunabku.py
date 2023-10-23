@@ -139,7 +139,7 @@ class TestHunabku(unittest.TestCase):
         print('############################ running tearDown ############################')
         rmtree("HunabKu_test", ignore_errors=True)
         rmtree("HunabKu_test2", ignore_errors=True)
-        rmtree("Hunabku_apidoc", ignore_errors=True)
+        rmtree("HunabKu_apidoc", ignore_errors=True)
         if os.path.exists("config.py"):
             os.remove("config.py")
 
