@@ -158,5 +158,6 @@ class TestHunabku(unittest.TestCase):
         if res.exit != 0:
             print("ERROR: uninstalling apidoc plugin")
 
+
 if __name__ == '__main__':
     unittest.main()
